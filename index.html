@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>English Playroom</title>
+  <style>
+    /* ===================================================
+       RESET & BASE
+       =================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'Arial Rounded MT Bold', 'Nunito', sans-serif;
+    }
+
+    /* ===================================================
+       SOFT PASTEL COLOR PALETTE
+       =================================================== */
+    :root {
+      --bg-main:       #FFF8F0;   /* warm cream           */
+      --bg-hub:        #FEF3E2;   /* soft peach            */
+      --bg-memory:     #EDE9FE;   /* lavender mist         */
+      --bg-pony:       #FCE7F3;   /* blush pink            */
+      --bg-count:      #ECFCCB;   /* spring green          */
+      --bg-drums:      #FEF9C3;   /* buttercup yellow      */
+
+      --card-back:     #C4B5FD;   /* soft violet           */
+      --card-front:    #FFFFFF;
+
+      --btn-shadow:    rgba(0, 0, 0, 0.08);
+      --btn-active:    rgba(0, 0, 0, 0.04);
+
+      --pastel-pink:   #FBCFE8;
+      --pastel-blue:   #BAE6FD;
+      --pastel-green:  #BBF7D0;
+      --pastel-yellow: #FDE68A;
+      --pastel-orange: #FED7AA;
+      --pastel-violet: #DDD6FE;
+
+      --radius-sm:     16px;
+      --radius-md:     24px;
+      --radius-lg:     32px;
+      --radius-full:   9999px;
+
+      --gap:           24px;
+      --gap-lg:        32px;
+    }
+
+    /* ===================================================
+       SCREEN CONTAINER (each view is a full-screen section)
+       =================================================== */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;            /* toggled via JS later  */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--gap-lg);
+      padding-top: calc(var(--gap-lg) + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(var(--gap-lg) + env(safe-area-inset-bottom, 0px));
+      overflow: hidden;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ===================================================
+       BACK BUTTON (house icon — top-left of every game)
+       =================================================== */
+    .back-btn {
+      position: absolute;
+      top: var(--gap);
+      left: var(--gap);
+      width: 80px;
+      height: 80px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 12px var(--btn-shadow);
+      font-size: 40px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .back-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 6px 18px var(--btn-shadow);
+    }
+
+    .back-btn:active {
+      transform: scale(0.93);
+      background: var(--btn-active);
+      box-shadow: 0 2px 6px var(--btn-shadow);
+    }
+
+    /* ===================================================
+       1.  CO-PLAY HUB  (Main Menu)
+       =================================================== */
+    #hub {
+      background: var(--bg-hub);
+      gap: var(--gap-lg);
+    }
+
+    .hub-title {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .hub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap-lg);
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .hub-btn {
+      aspect-ratio: 1;
+      border: none;
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 56px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px var(--btn-shadow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      min-width: 120px;
+      min-height: 120px;
+    }
+
+    .hub-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 28px var(--btn-shadow);
+    }
+
+    .hub-btn:active {
+      transform: scale(0.94);
+      box-shadow: 0 2px 8px var(--btn-shadow);
+    }
+
+    .hub-btn[data-game="memory"]  { background: var(--pastel-violet); }
+    .hub-btn[data-game="pony"]    { background: var(--pastel-pink);   }
+    .hub-btn[data-game="count"]   { background: var(--pastel-green);  }
+    .hub-btn[data-game="drums"]   { background: var(--pastel-yellow); }
+
+    /* ===================================================
+       2.  MEMORY MATCH SCREEN
+       =================================================== */
+    #memory {
+      background: var(--bg-memory);
+    }
+
+    .memory-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap-lg);
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* --- Card wrapper (perspective container) --- */
+    .card {
+      aspect-ratio: 3 / 4;
+      min-height: 120px;
+      perspective: 600px;
+      cursor: pointer;
+    }
+
+    /* --- Inner card that flips --- */
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s ease;
+      transform-style: preserve-3d;
+      border-radius: var(--radius-md);
+    }
+
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    /* --- Shared face styling --- */
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-md);
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+      box-shadow: 0 4px 14px var(--btn-shadow);
+    }
+
+    /* --- Back face (what you see first) --- */
+    .card-back {
+      background: var(--card-back);
+    }
+
+    .card-back::after {
+      content: "?";
+      font-size: 52px;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: bold;
+    }
+
+    /* --- Front face (hidden until flip) --- */
+    .card-front {
+      background: var(--card-front);
+      transform: rotateY(180deg);
+    }
+
+    /* hover / active feedback on cards */
+    .card:hover .card-inner {
+      filter: brightness(1.04);
+    }
+
+    .card:active .card-inner {
+      transform: scale(0.95);
+    }
+
+    .card.flipped:active .card-inner {
+      transform: rotateY(180deg) scale(0.95);
+    }
+
+    /* ===================================================
+       3.  PONY MORNING ROUTINE SCREEN
+       =================================================== */
+    #pony {
+      background: var(--bg-pony);
+      gap: var(--gap-lg);
+    }
+
+    .pony-character {
+      width: 140px;
+      height: 140px;
+      border-radius: var(--radius-full);
+      background: #FFFFFF;
+      box-shadow: 0 6px 24px var(--btn-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+    }
+
+    .pony-actions {
+      display: flex;
+      gap: var(--gap-lg);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .pony-btn {
+      width: 110px;
+      height: 110px;
+      border: none;
+      border-radius: var(--radius-full);
+      background: #FFFFFF;
+      box-shadow: 0 4px 16px var(--btn-shadow);
+      font-size: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .pony-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 22px var(--btn-shadow);
+    }
+
+    .pony-btn:active {
+      transform: scale(0.92);
+      background: var(--pastel-pink);
+      box-shadow: 0 2px 8px var(--btn-shadow);
+    }
+
+    /* Subtle ring to hint "not yet done" */
+    .pony-btn.done {
+      background: var(--pastel-green);
+    }
+
+    /* ===================================================
+       4.  LET'S COUNT SCREEN
+       =================================================== */
+    #count {
+      background: var(--bg-count);
+      gap: var(--gap-lg);
+    }
+
+    .count-objects {
+      display: flex;
+      gap: var(--gap-lg);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .count-item {
+      width: 100px;
+      height: 100px;
+      border-radius: var(--radius-md);
+      background: #FFFFFF;
+      box-shadow: 0 4px 14px var(--btn-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      transition: transform 0.15s ease;
+    }
+
+    .count-item:active {
+      transform: scale(0.92);
+    }
+
+    .count-number {
+      width: 160px;
+      height: 160px;
+      border-radius: var(--radius-full);
+      background: #FFFFFF;
+      box-shadow: 0 6px 24px var(--btn-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      font-weight: bold;
+      color: #6B7280;
+    }
+
+    /* ===================================================
+       5.  RHYTHM & SYLLABLES SCREEN
+       =================================================== */
+    #drums {
+      background: var(--bg-drums);
+      justify-content: space-between;
+    }
+
+    .drums-image {
+      width: 140px;
+      height: 140px;
+      border-radius: var(--radius-full);
+      background: #FFFFFF;
+      box-shadow: 0 6px 24px var(--btn-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+    }
+
+    .drums-row {
+      display: flex;
+      gap: var(--gap-lg);
+      justify-content: center;
+      padding-bottom: var(--gap);
+    }
+
+    .drum {
+      width: 130px;
+      height: 130px;
+      border: none;
+      border-radius: var(--radius-full);
+      background: linear-gradient(145deg, var(--pastel-orange), #FDBA74);
+      box-shadow: 0 8px 24px var(--btn-shadow), inset 0 -4px 0 rgba(0,0,0,0.06);
+      font-size: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .drum:hover {
+      transform: scale(1.06);
+      box-shadow: 0 10px 30px var(--btn-shadow), inset 0 -4px 0 rgba(0,0,0,0.06);
+    }
+
+    .drum:active {
+      transform: scale(0.9);
+      box-shadow: 0 2px 8px var(--btn-shadow), inset 0 2px 0 rgba(0,0,0,0.04);
+    }
+
+    /* ===================================================
+       RESPONSIVE TWEAKS
+       =================================================== */
+
+    /* Small phones */
+    @media (max-width: 380px) {
+      .hub-btn        { font-size: 44px; }
+      .pony-character { width: 110px; height: 110px; font-size: 64px; }
+      .pony-btn       { width: 90px;  height: 90px;  font-size: 40px; }
+      .count-item     { width: 80px;  height: 80px;  font-size: 48px; }
+      .count-number   { width: 130px; height: 130px; font-size: 64px; }
+      .drum           { width: 110px; height: 110px; font-size: 48px; }
+      .drums-image    { width: 110px; height: 110px; font-size: 64px; }
+    }
+
+    /* Tablets / landscape */
+    @media (min-width: 768px) {
+      .hub-grid       { max-width: 560px; gap: 40px; }
+      .hub-btn        { font-size: 72px; min-height: 160px; }
+      .memory-grid    { max-width: 520px; gap: 40px; }
+      .card-face      { font-size: 72px; }
+      .pony-character { width: 180px; height: 180px; font-size: 100px; }
+      .pony-btn       { width: 140px; height: 140px; font-size: 64px; }
+      .count-item     { width: 130px; height: 130px; font-size: 76px; }
+      .count-number   { width: 200px; height: 200px; font-size: 100px; }
+      .drum           { width: 170px; height: 170px; font-size: 72px; }
+      .drums-image    { width: 180px; height: 180px; font-size: 100px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==============================================
+       1.  CO-PLAY HUB  (Main Menu)
+       ============================================== -->
+  <section id="hub" class="screen active">
+    <div class="hub-title" aria-label="Playroom">🧸</div>
+
+    <div class="hub-grid">
+      <button class="hub-btn" data-game="memory"  aria-label="Memory Cards">🃏</button>
+      <button class="hub-btn" data-game="pony"    aria-label="Pony Routine">🐴</button>
+      <button class="hub-btn" data-game="count"   aria-label="Apple Counting">🍎</button>
+      <button class="hub-btn" data-game="drums"   aria-label="Rhythm Drums">🥁</button>
+    </div>
+  </section>
+
+  <!-- ==============================================
+       2.  MEMORY MATCH
+       ============================================== -->
+  <section id="memory" class="screen">
+    <button class="back-btn" aria-label="Back to Hub">🏠</button>
+
+    <div class="memory-grid">
+      <div class="card" aria-label="Card 1">
+        <div class="card-inner">
+          <div class="card-face card-back"></div>
+          <div class="card-face card-front"></div>
+        </div>
+      </div>
+      <div class="card" aria-label="Card 2">
+        <div class="card-inner">
+          <div class="card-face card-back"></div>
+          <div class="card-face card-front"></div>
+        </div>
+      </div>
+      <div class="card" aria-label="Card 3">
+        <div class="card-inner">
+          <div class="card-face card-back"></div>
+          <div class="card-face card-front"></div>
+        </div>
+      </div>
+      <div class="card" aria-label="Card 4">
+        <div class="card-inner">
+          <div class="card-face card-back"></div>
+          <div class="card-face card-front"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================================
+       3.  PONY MORNING ROUTINE
+       ============================================== -->
+  <section id="pony" class="screen">
+    <button class="back-btn" aria-label="Back to Hub">🏠</button>
+
+    <div class="pony-character" aria-label="Pony">🐴</div>
+
+    <div class="pony-actions">
+      <button class="pony-btn" data-action="window"     aria-label="Open Window">🪟</button>
+      <button class="pony-btn" data-action="toilet"     aria-label="Use Toilet">🚽</button>
+      <button class="pony-btn" data-action="toothbrush" aria-label="Brush Teeth">🪥</button>
+    </div>
+  </section>
+
+  <!-- ==============================================
+       4.  LET'S COUNT
+       ============================================== -->
+  <section id="count" class="screen">
+    <button class="back-btn" aria-label="Back to Hub">🏠</button>
+
+    <div class="count-objects">
+      <div class="count-item" aria-label="Apple 1">🍎</div>
+      <div class="count-item" aria-label="Apple 2">🍎</div>
+      <div class="count-item" aria-label="Apple 3">🍎</div>
+    </div>
+
+    <div class="count-number" aria-label="Number display">3</div>
+  </section>
+
+  <!-- ==============================================
+       5.  RHYTHM & SYLLABLES
+       ============================================== -->
+  <section id="drums" class="screen">
+    <button class="back-btn" aria-label="Back to Hub">🏠</button>
+
+    <div class="drums-image" aria-label="Word image">🐶</div>
+
+    <div class="drums-row">
+      <button class="drum" aria-label="Drum left">🥁</button>
+      <button class="drum" aria-label="Drum right">🥁</button>
+    </div>
+  </section>
+
+</body>
+</html>
