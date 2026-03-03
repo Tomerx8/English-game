@@ -279,6 +279,26 @@
        =================================================== */
     #memory {
       background: var(--bg-memory);
+      gap: 16px;
+      justify-content: center;
+    }
+
+    .memory-progress-track {
+      width: 80%;
+      max-width: 360px;
+      height: 18px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .memory-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #C4B5FD, #A78BFA);
+      border-radius: var(--radius-full);
+      transition: width 0.5s ease;
     }
 
     .memory-grid {
@@ -373,7 +393,8 @@
        =================================================== */
     #pony {
       background: var(--bg-pony);
-      gap: var(--gap-lg);
+      gap: var(--gap);
+      justify-content: center;
     }
 
     .pony-character {
@@ -387,6 +408,22 @@
       justify-content: center;
       font-size: 90px;
       line-height: 1;
+      transition: transform 0.3s ease;
+    }
+
+    .pony-step-label {
+      font-family: var(--font-balloon);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--title-color);
+      text-align: center;
+      min-height: 36px;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .pony-step-label.visible {
+      opacity: 1;
     }
 
     .pony-actions {
@@ -399,7 +436,7 @@
     .pony-btn {
       width: 110px;
       height: 110px;
-      border: none;
+      border: 4px solid transparent;
       border-radius: var(--radius-full);
       background: #FFFFFF;
       box-shadow: 0 4px 16px var(--btn-shadow);
@@ -409,7 +446,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.3s ease, opacity 0.3s ease;
     }
 
     .pony-btn:hover {
@@ -423,8 +460,29 @@
       box-shadow: 0 2px 8px var(--btn-shadow);
     }
 
+    /* Active step — soft pulse to guide attention */
+    .pony-btn.active-step {
+      border-color: #F9A8D4;
+      animation: pony-guide-pulse 1.2s ease infinite;
+    }
+
+    /* Completed step — green check */
     .pony-btn.done {
       background: var(--pastel-green);
+      border-color: #86EFAC;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    /* Inactive (not yet reachable) step */
+    .pony-btn.inactive {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    @keyframes pony-guide-pulse {
+      0%, 100% { transform: scale(1);    box-shadow: 0 4px 16px var(--btn-shadow); }
+      50%      { transform: scale(1.08); box-shadow: 0 6px 24px rgba(249,168,212,0.4); }
     }
 
     /* ===================================================
@@ -595,6 +653,9 @@
       .drum                 { width: 110px; height: 110px; font-size: 48px; }
       .drums-image          { width: 130px; height: 130px; font-size: 72px; }
       .memory-level-btn     { width: 90px;  height: 90px;  font-size: 38px; }
+      .pony-character       { width: 120px; height: 120px; font-size: 68px; }
+      .pony-btn             { width: 80px;  height: 80px;  font-size: 38px; }
+      .pony-step-label      { font-size: 20px; }
     }
 
     /* ===================================================
@@ -929,6 +990,11 @@
       </div>
     </div>
 
+    <!-- Progress bar — visible during game -->
+    <div class="memory-progress-track hidden" id="memory-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="memory-progress-fill" id="memory-progress-fill"></div>
+    </div>
+
     <!-- Card grid — hidden until difficulty chosen; cards built by JS -->
     <div class="memory-grid hidden" id="memory-grid"></div>
   </section>
@@ -938,13 +1004,16 @@
        ============================================== -->
   <section id="pony" class="screen">
     <button class="back-btn" aria-label="Back to Hub">🏠</button>
+    <div class="mascot" id="pony-mascot" aria-hidden="true">🦉</div>
 
-    <div class="pony-character" aria-label="Pony">🐴</div>
+    <div class="pony-character" id="pony-emoji" aria-label="Pony">🐴</div>
+    <div class="pony-step-label" id="pony-label"></div>
 
-    <div class="pony-actions">
+    <div class="pony-actions" id="pony-actions">
       <button class="pony-btn" data-action="window" aria-label="Open Window">🪟</button>
       <button class="pony-btn" data-action="toilet" aria-label="Use Toilet">🚽</button>
       <button class="pony-btn" data-action="toothbrush" aria-label="Brush Teeth">🪥</button>
+      <button class="pony-btn" data-action="dressed" aria-label="Get Dressed">👕</button>
     </div>
   </section>
 
@@ -1083,6 +1152,38 @@
       osc.stop(ctx.currentTime + 0.07);
     }
 
+    /** Gentle "womp" — descending low tone for mismatches (120ms). */
+    function playWomp() {
+      var ctx = ensureAudioCtx();
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(330, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.12);
+    }
+
+    /** Chirpy SFX — short ascending whistle for pony steps (150ms). */
+    function playChirp() {
+      var ctx = ensureAudioCtx();
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(500, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    }
+
     /** "Ding" chime — ascending two-tone (200ms). */
     function playDing() {
       var ctx = ensureAudioCtx();
@@ -1123,6 +1224,7 @@
     var mascots = {
       flash  : document.getElementById('flash-mascot'),
       memory : document.getElementById('memory-mascot'),
+      pony   : document.getElementById('pony-mascot'),
       yoga   : document.getElementById('yoga-mascot')
     };
     var activeMascot = null;
@@ -1224,8 +1326,8 @@
         setActiveMascot(game);
         if (game === 'flash')  { initFlashcards(); return; }
         if (game === 'memory') { initMemory();     return; }
+        if (game === 'pony')   { initPony();        return; }
         if (game === 'yoga')   { initYoga();        return; }
-        if (game === 'pony')   speak("Help pony get ready!");
         if (game === 'count')  speak("Let's count!");
         if (game === 'drums')  speak("Let's make music!");
       });
@@ -1237,6 +1339,7 @@
         playPop();
         flashBusy    = false;
         yogaBusy     = false;
+        ponyBusy     = false;
         memoryLocked = false;
         goToHub();
       });
@@ -1497,50 +1600,57 @@
     rightBtn.addEventListener('click', function () { handleChoice('right'); });
 
     /* ================================================
-       5.  GAME 2 — MEMORY MATCH (Difficulty Selector)
+       5.  GAME 2 — MEMORY MATCH (Full Logic)
        ================================================ */
-    var memoryMenu    = document.getElementById('memory-menu');
-    var memoryGrid    = document.getElementById('memory-grid');
-    var memoryFlipped = [];   /* currently face-up cards (max 2) */
-    var memoryMatched = 0;    /* number of matched pairs */
-    var memoryTotal   = 0;    /* total pairs for this round */
+    var memoryMenu         = document.getElementById('memory-menu');
+    var memoryGrid         = document.getElementById('memory-grid');
+    var memoryProgressTrack = document.getElementById('memory-progress-track');
+    var memoryProgressFill  = document.getElementById('memory-progress-fill');
+    var memoryFlipped = [];
+    var memoryMatched = 0;
+    var memoryTotal   = 0;
     var memoryLocked  = false;
 
-    /* Pool of emoji pairs for memory game */
-    var memoryEmojis = [
-      '🐶','🐱','🐸','🦋','🐵','🐧','🐷','🐴',
-      '🦁','🐘','🐰','🐻','🐝','🐢','🦉','🐍',
-      '🍎','🍌','🍇','🍓','🍕','🍪','🌸','⭐'
-    ];
+    function setMemoryProgress(matched, total) {
+      var pct = Math.round((matched / total) * 100);
+      memoryProgressFill.style.width = pct + '%';
+      memoryProgressTrack.setAttribute('aria-valuenow', pct);
+    }
 
     function buildMemoryCards(cardCount) {
-      /* Clear previous cards and column class */
       memoryGrid.innerHTML = '';
       memoryGrid.classList.remove('cols-2', 'cols-3', 'cols-4');
 
       var pairCount = cardCount / 2;
 
-      /* Pick column layout based on count */
       if (cardCount <= 4)       memoryGrid.classList.add('cols-2');
       else if (cardCount <= 8)  memoryGrid.classList.add('cols-2');
       else                      memoryGrid.classList.add('cols-3');
 
-      /* Shuffle and pick pairs */
-      shuffle(memoryEmojis);
-      var chosen = memoryEmojis.slice(0, pairCount);
-      var deck = chosen.concat(chosen); /* duplicate for pairs */
+      /* Pick N/2 words from the 100-word vocabulary */
+      shuffle(allWords);
+      var chosen = allWords.slice(0, pairCount);
+
+      /* Build deck: each word appears twice */
+      var deck = [];
+      for (var c = 0; c < chosen.length; c++) {
+        deck.push(chosen[c]);
+        deck.push(chosen[c]);
+      }
       shuffle(deck);
 
       for (var i = 0; i < deck.length; i++) {
+        var item = deck[i];
         var card = document.createElement('div');
         card.className = 'card';
         card.setAttribute('aria-label', 'Card ' + (i + 1));
-        card.dataset.emoji = deck[i];
-        card.dataset.index = i;
+        card.dataset.word      = item.word;
+        card.dataset.emoji     = item.emoji;
+        card.dataset.animation = item.animation;
         card.innerHTML =
           '<div class="card-inner">' +
             '<div class="card-face card-back">🤡</div>' +
-            '<div class="card-face card-front">' + deck[i] + '</div>' +
+            '<div class="card-face card-front">' + item.emoji + '</div>' +
           '</div>';
         memoryGrid.appendChild(card);
       }
@@ -1551,21 +1661,25 @@
     function startMemoryGame(cardCount) {
       memoryMenu.classList.add('hidden');
       memoryGrid.classList.remove('hidden');
+      memoryProgressTrack.classList.remove('hidden');
       memoryFlipped = [];
       memoryMatched = 0;
       memoryLocked  = false;
       memoryTotal   = buildMemoryCards(cardCount);
+      setMemoryProgress(0, memoryTotal);
       speak("Let's find the pairs! Ready?");
     }
 
     function initMemory() {
       memoryMenu.classList.remove('hidden');
       memoryGrid.classList.add('hidden');
+      memoryProgressTrack.classList.add('hidden');
       memoryGrid.innerHTML = '';
+      memoryProgressFill.style.width = '0%';
       speak('How many cards would you like?');
     }
 
-    /* Handle card taps via event delegation on the grid */
+    /* Handle card taps via event delegation */
     memoryGrid.addEventListener('click', function (e) {
       if (memoryLocked) return;
       var card = e.target.closest('.card');
@@ -1575,40 +1689,57 @@
       card.classList.add('flipped');
       memoryFlipped.push(card);
 
+      /* Speak the word on the flipped card */
+      speak(card.dataset.word);
+
       if (memoryFlipped.length === 2) {
         memoryLocked = true;
         var a = memoryFlipped[0];
         var b = memoryFlipped[1];
 
-        if (a.dataset.emoji === b.dataset.emoji) {
-          /* Match found */
-          memoryMatched++;
-          a.classList.add('matched');
-          b.classList.add('matched');
-          memoryFlipped = [];
-          memoryLocked  = false;
-          playDing();
-          mascotReact('correct');
-          speak('Yes! A pair!', function () {
-            if (memoryMatched === memoryTotal) {
-              launchConfetti();
-              speak('Amazing! You found them all!', function () {
-                setTimeout(goToHub, 1500);
-              });
-            }
-          });
-        } else {
-          /* No match — flip back after a pause */
-          mascotReact('wrong');
-          speak('Try again!', function () {
-            setTimeout(function () {
-              a.classList.remove('flipped');
-              b.classList.remove('flipped');
-              memoryFlipped = [];
-              memoryLocked  = false;
-            }, 800);
-          });
-        }
+        /* Wait for the second word to finish before checking */
+        setTimeout(function () {
+          if (a.dataset.word === b.dataset.word) {
+            /* --- MATCH --- */
+            memoryMatched++;
+            a.classList.add('matched');
+            b.classList.add('matched');
+
+            /* Animate the matched emoji */
+            var frontA = a.querySelector('.card-front');
+            var frontB = b.querySelector('.card-front');
+            if (frontA) triggerAnim(frontA, a.dataset.animation);
+            if (frontB) triggerAnim(frontB, b.dataset.animation);
+
+            memoryFlipped = [];
+            memoryLocked  = false;
+            playDing();
+            mascotReact('correct');
+            setMemoryProgress(memoryMatched, memoryTotal);
+
+            speak('Yes! ' + a.dataset.word + '!', function () {
+              if (memoryMatched === memoryTotal) {
+                launchConfetti();
+                speak('Wow! Amazing memory!', function () {
+                  setTimeout(goToHub, 1500);
+                });
+              }
+            });
+
+          } else {
+            /* --- MISMATCH --- */
+            playWomp();
+            mascotReact('wrong');
+            speak('Not a match!', function () {
+              setTimeout(function () {
+                a.classList.remove('flipped');
+                b.classList.remove('flipped');
+                memoryFlipped = [];
+                memoryLocked  = false;
+              }, 1500);
+            });
+          }
+        }, 800);
       }
     });
 
@@ -1617,6 +1748,130 @@
         playPop();
         var count = parseInt(btn.getAttribute('data-count'), 10);
         startMemoryGame(count);
+      });
+    });
+
+    /* ================================================
+       6.  GAME 3 — PONY MORNING ROUTINE (Sequential)
+       ================================================ */
+    var ponySteps = [
+      {
+        action:   'window',
+        emoji:    '🪟',
+        ponyEmoji: '😴',    /* sleepy pony */
+        label:    'Wake up!',
+        prompt:   'Good morning! Let\'s wake up the pony. Tap the window!'
+      },
+      {
+        action:   'toilet',
+        emoji:    '🚽',
+        ponyEmoji: '🐴',    /* awake pony */
+        label:    'Flush!',
+        prompt:   'Now let\'s go to the toilet! Tap it!'
+      },
+      {
+        action:   'toothbrush',
+        emoji:    '🪥',
+        ponyEmoji: '😊',    /* happy pony */
+        label:    'Brush your teeth!',
+        prompt:   'Time to brush teeth! Tap the toothbrush!'
+      },
+      {
+        action:   'dressed',
+        emoji:    '👕',
+        ponyEmoji: '😁',    /* big grin pony */
+        label:    'Get dressed!',
+        prompt:   'Almost done! Let\'s get dressed! Tap the shirt!'
+      }
+    ];
+
+    var ponyIndex = 0;
+    var ponyBusy  = false;
+
+    var ponyEmojiEl  = document.getElementById('pony-emoji');
+    var ponyLabelEl  = document.getElementById('pony-label');
+    var ponyBtns     = document.querySelectorAll('.pony-btn');
+
+    function setPonyStep(index) {
+      var step = ponySteps[index];
+
+      /* Update pony emoji */
+      ponyEmojiEl.textContent = step.ponyEmoji;
+
+      /* Reset label */
+      ponyLabelEl.textContent = '';
+      ponyLabelEl.classList.remove('visible');
+
+      /* Update button states */
+      ponyBtns.forEach(function (btn) {
+        var action = btn.getAttribute('data-action');
+        btn.classList.remove('active-step', 'done', 'inactive');
+
+        /* Find which step index this button corresponds to */
+        var btnStepIdx = -1;
+        for (var s = 0; s < ponySteps.length; s++) {
+          if (ponySteps[s].action === action) { btnStepIdx = s; break; }
+        }
+
+        if (btnStepIdx < index)       btn.classList.add('done');
+        else if (btnStepIdx === index) btn.classList.add('active-step');
+        else                           btn.classList.add('inactive');
+      });
+    }
+
+    function initPony() {
+      ponyIndex = 0;
+      ponyBusy  = false;
+      setPonyStep(0);
+      speak(ponySteps[0].prompt);
+    }
+
+    /* Handle pony button taps */
+    ponyBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (ponyBusy) return;
+        var action = btn.getAttribute('data-action');
+        var step   = ponySteps[ponyIndex];
+
+        /* Only the active step button does anything */
+        if (action !== step.action) return;
+
+        playPop();
+        playChirp();
+        ponyBusy = true;
+
+        /* Show label */
+        ponyLabelEl.textContent = step.label;
+        ponyLabelEl.classList.add('visible');
+
+        /* Mark button done */
+        btn.classList.remove('active-step');
+        btn.classList.add('done');
+
+        /* Celebrate */
+        mascotReact('correct');
+
+        /* Speak the action */
+        speak(step.label, function () {
+          setTimeout(function () {
+            ponyIndex++;
+            if (ponyIndex < ponySteps.length) {
+              setPonyStep(ponyIndex);
+              ponyBusy = false;
+              speak(ponySteps[ponyIndex].prompt);
+            } else {
+              /* Final state — pony is ready! */
+              ponyEmojiEl.textContent = '🤩';
+              ponyLabelEl.textContent = 'Ready for school!';
+              ponyLabelEl.classList.add('visible');
+              playDing();
+              launchConfetti();
+              speak('The pony is ready for school! Great job!', function () {
+                setTimeout(goToHub, 2000);
+              });
+            }
+          }, 2000);
+        });
       });
     });
 
