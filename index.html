@@ -283,11 +283,17 @@
 
     .memory-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--gap-lg);
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 16px;
       width: 100%;
       max-width: 420px;
+      padding: 8px;
     }
+
+    /* Force sensible column counts per difficulty */
+    .memory-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .memory-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .memory-grid.cols-4 { grid-template-columns: repeat(4, 1fr); max-width: 520px; }
 
     /* Card wrapper (perspective container) */
     .card {
@@ -348,6 +354,18 @@
 
     .card.flipped:active .card-inner {
       transform: rotateY(180deg) scale(0.95);
+    }
+
+    /* Matched pair — stays flipped with green glow */
+    .card.matched .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card.matched .card-front {
+      box-shadow: 0 0 16px rgba(74, 222, 128, 0.6);
+      background: #F0FFF4;
+    }
+    .card.matched {
+      pointer-events: none;
     }
 
     /* ===================================================
@@ -612,6 +630,19 @@
     }
 
     /* ===================================================
+       GLOBAL SQUISH — pronounced tactile press on ALL buttons
+       =================================================== */
+    button:active,
+    .card:active .card-inner,
+    .yoga-stage:active {
+      transform: scale(0.9) !important;
+      transition: transform 0.08s ease !important;
+    }
+    .card.flipped:active .card-inner {
+      transform: rotateY(180deg) scale(0.9) !important;
+    }
+
+    /* ===================================================
        EMOJI ANIMATIONS — triggered on correct answer
        =================================================== */
     .anim-bounce { animation: anim-bounce 0.6s ease 2; }
@@ -703,9 +734,28 @@
       animation: mascot-pulse 0.8s ease infinite;
     }
 
+    /* Correct answer — mascot jumps up big */
+    .mascot.react-correct {
+      animation: mascot-jump 0.6s ease 1;
+      font-size: 48px;
+    }
+
+    /* Wrong answer — gentle shake */
+    .mascot.react-wrong {
+      animation: anim-shake 0.4s ease 1;
+    }
+
     @keyframes mascot-pulse {
       0%, 100% { transform: scale(1); }
       50%      { transform: scale(1.15); }
+    }
+
+    @keyframes mascot-jump {
+      0%       { transform: scale(1) translateY(0); }
+      30%      { transform: scale(1.3) translateY(-18px); }
+      50%      { transform: scale(1.35) translateY(-24px); }
+      70%      { transform: scale(1.2) translateY(-10px); }
+      100%     { transform: scale(1) translateY(0); }
     }
 
     /* ===================================================
@@ -879,33 +929,8 @@
       </div>
     </div>
 
-    <!-- Card grid — hidden until difficulty chosen -->
-    <div class="memory-grid hidden" id="memory-grid">
-      <div class="card" aria-label="Card 1">
-        <div class="card-inner">
-          <div class="card-face card-back">🤡</div>
-          <div class="card-face card-front">🐶</div>
-        </div>
-      </div>
-      <div class="card" aria-label="Card 2">
-        <div class="card-inner">
-          <div class="card-face card-back">🤡</div>
-          <div class="card-face card-front">🐱</div>
-        </div>
-      </div>
-      <div class="card" aria-label="Card 3">
-        <div class="card-inner">
-          <div class="card-face card-back">🤡</div>
-          <div class="card-face card-front">🐶</div>
-        </div>
-      </div>
-      <div class="card" aria-label="Card 4">
-        <div class="card-inner">
-          <div class="card-face card-back">🤡</div>
-          <div class="card-face card-front">🐱</div>
-        </div>
-      </div>
-    </div>
+    <!-- Card grid — hidden until difficulty chosen; cards built by JS -->
+    <div class="memory-grid hidden" id="memory-grid"></div>
   </section>
 
   <!-- ==============================================
@@ -1030,27 +1055,125 @@
     }
 
     /* -----------------------------------------------
-       Mascot registry — each game screen's 🦉 bubble
+       Sound Effects — tiny base64 PCM via Web Audio
        ----------------------------------------------- */
+    var audioCtx = null;
+
+    function ensureAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    /** Short "pop" — a quick sine burst (70ms). */
+    function playPop() {
+      var ctx = ensureAudioCtx();
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.07);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.07);
+    }
+
+    /** "Ding" chime — ascending two-tone (200ms). */
+    function playDing() {
+      var ctx = ensureAudioCtx();
+      var now = ctx.currentTime;
+      /* First tone */
+      var osc1  = ctx.createOscillator();
+      var gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(880, now);
+      gain1.gain.setValueAtTime(0.3, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.15);
+      /* Second tone — slightly higher, slight delay */
+      var osc2  = ctx.createOscillator();
+      var gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1320, now + 0.08);
+      gain2.gain.setValueAtTime(0.001, now);
+      gain2.gain.setValueAtTime(0.3, now + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.25);
+    }
+
+    /* -----------------------------------------------
+       Dynamic Mascot — emoji changes with game state
+       ----------------------------------------------- */
+    var MASCOT_IDLE    = '🦉';
+    var MASCOT_SPEAK   = '🗣️';
+    var MASCOT_CORRECT = '🤩';
+    var MASCOT_WRONG   = '😅';
+
     var mascots = {
       flash  : document.getElementById('flash-mascot'),
       memory : document.getElementById('memory-mascot'),
       yoga   : document.getElementById('yoga-mascot')
     };
-    var activeMascot = null;   /* tracks whichever is visible */
+    var activeMascot = null;
+    var mascotSpeakTimer = null;
 
     function setActiveMascot(id) {
       activeMascot = mascots[id] || null;
+      if (activeMascot) activeMascot.textContent = MASCOT_IDLE;
     }
 
-    /** Start the mascot pulse animation. */
     function mascotStart() {
-      if (activeMascot) activeMascot.classList.add('speaking');
+      if (!activeMascot) return;
+      activeMascot.classList.add('speaking');
+      /* Alternate between 🦉 and 🗣️ while speaking */
+      var flip = false;
+      clearInterval(mascotSpeakTimer);
+      mascotSpeakTimer = setInterval(function () {
+        flip = !flip;
+        activeMascot.textContent = flip ? MASCOT_SPEAK : MASCOT_IDLE;
+      }, 400);
     }
 
-    /** Stop the mascot pulse animation. */
     function mascotStop() {
-      if (activeMascot) activeMascot.classList.remove('speaking');
+      if (!activeMascot) return;
+      clearInterval(mascotSpeakTimer);
+      mascotSpeakTimer = null;
+      activeMascot.classList.remove('speaking');
+      activeMascot.textContent = MASCOT_IDLE;
+    }
+
+    /** React to correct/wrong — brief emoji + animation, then revert. */
+    function mascotReact(type) {
+      if (!activeMascot) return;
+      clearInterval(mascotSpeakTimer);
+      activeMascot.classList.remove('speaking', 'react-correct', 'react-wrong');
+      void activeMascot.offsetWidth; /* reflow to restart animation */
+
+      if (type === 'correct') {
+        activeMascot.textContent = MASCOT_CORRECT;
+        activeMascot.classList.add('react-correct');
+      } else {
+        activeMascot.textContent = MASCOT_WRONG;
+        activeMascot.classList.add('react-wrong');
+      }
+
+      setTimeout(function () {
+        if (activeMascot) {
+          activeMascot.classList.remove('react-correct', 'react-wrong');
+          activeMascot.textContent = MASCOT_IDLE;
+        }
+      }, 1200);
     }
 
     /**
@@ -1063,8 +1186,8 @@
       synth.cancel();
       var utter   = new SpeechSynthesisUtterance(text);
       utter.lang  = 'en-US';
-      utter.rate  = 0.75;   /* slow & clear for 3-5 year olds */
-      utter.pitch = 1.2;    /* warm, enthusiastic tone        */
+      utter.rate  = 0.87;   /* natural pace — not robotic      */
+      utter.pitch = 1.15;   /* warm, enthusiastic instructor   */
       if (bestVoice) utter.voice = bestVoice;
       utter.onstart = mascotStart;
       utter.onend   = function () {
@@ -1095,6 +1218,7 @@
     /* Hub buttons → open game screens */
     document.querySelectorAll('.hub-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
+        playPop();
         var game = btn.getAttribute('data-game');
         showScreen(game);
         setActiveMascot(game);
@@ -1110,8 +1234,10 @@
     /* All Back buttons → return to Hub */
     document.querySelectorAll('.back-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        flashBusy = false;
-        yogaBusy  = false;
+        playPop();
+        flashBusy    = false;
+        yogaBusy     = false;
+        memoryLocked = false;
         goToHub();
       });
     });
@@ -1325,6 +1451,7 @@
 
     function handleChoice(side) {
       if (flashBusy) return;
+      playPop();
       flashBusy = true;
 
       var isCorrect    = (side === targetSide);
@@ -1333,6 +1460,8 @@
       var tappedWord   = side === 'left' ? leftWord   : rightWord;
 
       if (isCorrect) {
+        playDing();
+        mascotReact('correct');
         tappedBtn.classList.add('correct');
         triggerAnim(tappedEmoji, tappedBtn.dataset.animation);
         tappedWord.classList.add('visible');
@@ -1356,6 +1485,7 @@
         });
 
       } else {
+        mascotReact('wrong');
         triggerAnim(tappedEmoji, 'shake');
         speak('Oops! Try again. Where is the ' + flashDeck[flashIndex].word + '?', function () {
           flashBusy = false;
@@ -1369,29 +1499,122 @@
     /* ================================================
        5.  GAME 2 — MEMORY MATCH (Difficulty Selector)
        ================================================ */
-    var memoryMenu = document.getElementById('memory-menu');
-    var memoryGrid = document.getElementById('memory-grid');
+    var memoryMenu    = document.getElementById('memory-menu');
+    var memoryGrid    = document.getElementById('memory-grid');
+    var memoryFlipped = [];   /* currently face-up cards (max 2) */
+    var memoryMatched = 0;    /* number of matched pairs */
+    var memoryTotal   = 0;    /* total pairs for this round */
+    var memoryLocked  = false;
 
-    /**
-     * Called when a difficulty button is tapped.
-     * Hides the selector and reveals the card grid.
-     * Full matching logic will be added in a later step.
-     */
+    /* Pool of emoji pairs for memory game */
+    var memoryEmojis = [
+      '🐶','🐱','🐸','🦋','🐵','🐧','🐷','🐴',
+      '🦁','🐘','🐰','🐻','🐝','🐢','🦉','🐍',
+      '🍎','🍌','🍇','🍓','🍕','🍪','🌸','⭐'
+    ];
+
+    function buildMemoryCards(cardCount) {
+      /* Clear previous cards and column class */
+      memoryGrid.innerHTML = '';
+      memoryGrid.classList.remove('cols-2', 'cols-3', 'cols-4');
+
+      var pairCount = cardCount / 2;
+
+      /* Pick column layout based on count */
+      if (cardCount <= 4)       memoryGrid.classList.add('cols-2');
+      else if (cardCount <= 8)  memoryGrid.classList.add('cols-2');
+      else                      memoryGrid.classList.add('cols-3');
+
+      /* Shuffle and pick pairs */
+      shuffle(memoryEmojis);
+      var chosen = memoryEmojis.slice(0, pairCount);
+      var deck = chosen.concat(chosen); /* duplicate for pairs */
+      shuffle(deck);
+
+      for (var i = 0; i < deck.length; i++) {
+        var card = document.createElement('div');
+        card.className = 'card';
+        card.setAttribute('aria-label', 'Card ' + (i + 1));
+        card.dataset.emoji = deck[i];
+        card.dataset.index = i;
+        card.innerHTML =
+          '<div class="card-inner">' +
+            '<div class="card-face card-back">🤡</div>' +
+            '<div class="card-face card-front">' + deck[i] + '</div>' +
+          '</div>';
+        memoryGrid.appendChild(card);
+      }
+
+      return pairCount;
+    }
+
     function startMemoryGame(cardCount) {
       memoryMenu.classList.add('hidden');
       memoryGrid.classList.remove('hidden');
+      memoryFlipped = [];
+      memoryMatched = 0;
+      memoryLocked  = false;
+      memoryTotal   = buildMemoryCards(cardCount);
       speak("Let's find the pairs! Ready?");
-      /* TODO: build cardCount cards dynamically */
     }
 
     function initMemory() {
       memoryMenu.classList.remove('hidden');
       memoryGrid.classList.add('hidden');
+      memoryGrid.innerHTML = '';
       speak('How many cards would you like?');
     }
 
+    /* Handle card taps via event delegation on the grid */
+    memoryGrid.addEventListener('click', function (e) {
+      if (memoryLocked) return;
+      var card = e.target.closest('.card');
+      if (!card || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+      playPop();
+      card.classList.add('flipped');
+      memoryFlipped.push(card);
+
+      if (memoryFlipped.length === 2) {
+        memoryLocked = true;
+        var a = memoryFlipped[0];
+        var b = memoryFlipped[1];
+
+        if (a.dataset.emoji === b.dataset.emoji) {
+          /* Match found */
+          memoryMatched++;
+          a.classList.add('matched');
+          b.classList.add('matched');
+          memoryFlipped = [];
+          memoryLocked  = false;
+          playDing();
+          mascotReact('correct');
+          speak('Yes! A pair!', function () {
+            if (memoryMatched === memoryTotal) {
+              launchConfetti();
+              speak('Amazing! You found them all!', function () {
+                setTimeout(goToHub, 1500);
+              });
+            }
+          });
+        } else {
+          /* No match — flip back after a pause */
+          mascotReact('wrong');
+          speak('Try again!', function () {
+            setTimeout(function () {
+              a.classList.remove('flipped');
+              b.classList.remove('flipped');
+              memoryFlipped = [];
+              memoryLocked  = false;
+            }, 800);
+          });
+        }
+      }
+    });
+
     document.querySelectorAll('.memory-level-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
+        playPop();
         var count = parseInt(btn.getAttribute('data-count'), 10);
         startMemoryGame(count);
       });
@@ -1442,11 +1665,14 @@
 
     yogaStage.addEventListener('click', function () {
       if (yogaBusy) return;
+      playPop();
       yogaBusy = true;
 
       var pose = yogaDeck[yogaIndex];
 
       /* Celebrate the current pose */
+      playDing();
+      mascotReact('correct');
       triggerAnim(yogaEmojiEl, pose.animation);
       yogaWordEl.classList.add('visible');
 
