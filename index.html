@@ -189,10 +189,10 @@
       flex-shrink: 0;
     }
 
-    /* Small parent-only label beneath the emoji */
+    /* Parent-readable label beneath the emoji */
     .hub-label {
       font-family: var(--font-balloon);
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 400;
       color: var(--label-color);
       white-space: nowrap;
@@ -533,7 +533,7 @@
       .hub-title       { font-size: 21px; }
       .hub-btn         { width: 130px; height: 145px; }
       .hub-emoji       { font-size: 64px; }
-      .hub-label       { font-size: 11px; }
+      .hub-label       { font-size: 13px; }
       .flashcard       { width: 240px; height: 320px; }
       .flashcard-emoji { font-size: 90px; }
       .flashcard-word  { font-size: 32px; }
@@ -553,7 +553,7 @@
       .hub-grid        { max-width: 750px; gap: 36px; }
       .hub-btn         { width: 200px; height: 220px; }
       .hub-emoji       { font-size: 100px; }
-      .hub-label       { font-size: 16px; }
+      .hub-label       { font-size: 18px; }
       .flashcard       { width: 340px; height: 460px; }
       .flashcard-emoji { font-size: 150px; }
       .flashcard-word  { font-size: 48px; }
@@ -566,6 +566,60 @@
       .count-number    { width: 200px; height: 200px; font-size: 100px; }
       .drum            { width: 170px; height: 170px; font-size: 76px; }
       .drums-image     { width: 200px; height: 200px; font-size: 110px; }
+    }
+    /* ===================================================
+       UTILITY — JS state classes
+       =================================================== */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Flashcard back — when revealed, show emoji + word */
+    .flashcard-back .flashcard-emoji {
+      font-size: 100px;
+    }
+
+    .flashcard-back .flashcard-word {
+      font-family: var(--font-balloon);
+      font-size: 36px;
+      font-weight: 700;
+      color: #FFFFFF;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* ===================================================
+       CONFETTI — lightweight CSS + JS celebration
+       =================================================== */
+    .confetti-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      top: -20px;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      opacity: 0;
+      animation: confetti-fall 2.5s ease-out forwards;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg) scale(1);
+      }
+      80% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(720deg) scale(0.4);
+      }
     }
   </style>
 </head>
@@ -612,11 +666,12 @@
     <div class="flashcard" aria-label="Flashcard">
       <div class="flashcard-inner">
         <div class="flashcard-face flashcard-front">
-          <span class="flashcard-emoji">🐱</span>
-          <span class="flashcard-word">Cat</span>
+          <span class="flashcard-emoji" id="flash-front-emoji">🐱</span>
+          <span class="flashcard-word" id="flash-front-word"></span>
         </div>
         <div class="flashcard-face flashcard-back">
-          <span class="flashcard-back-icon">✨</span>
+          <span class="flashcard-emoji" id="flash-back-emoji">✨</span>
+          <span class="flashcard-word" id="flash-back-word"></span>
         </div>
       </div>
     </div>
@@ -699,6 +754,210 @@
       <button class="drum" aria-label="Drum right">🥁</button>
     </div>
   </section>
+
+  <!-- ==============================================
+       JAVASCRIPT ENGINE
+       ============================================== -->
+  <script>
+  (function () {
+    'use strict';
+
+    /* ================================================
+       1.  VOICE USER INTERFACE (TTS) ENGINE
+       ================================================ */
+    const synth = window.speechSynthesis;
+
+    /**
+     * Speak a phrase using the Web Speech API.
+     * Cancels any in-progress utterance first to
+     * prevent overlapping audio from rapid taps.
+     */
+    function speak(text, onEnd) {
+      synth.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang  = 'en-US';
+      utter.rate  = 0.85;   // slightly slower for a toddler
+      utter.pitch = 1.1;    // slightly higher / friendlier
+      if (onEnd) utter.onend = onEnd;
+      synth.speak(utter);
+    }
+
+    /* ================================================
+       2.  NAVIGATION & STATE MANAGEMENT
+       ================================================ */
+    const screens = document.querySelectorAll('.screen');
+    const hub     = document.getElementById('hub');
+
+    /**
+     * Show a single screen by id, hiding all others.
+     */
+    function showScreen(id) {
+      screens.forEach(function (s) {
+        s.classList.remove('active');
+      });
+      document.getElementById(id).classList.add('active');
+    }
+
+    /** Navigate to the Hub and greet. */
+    function goToHub() {
+      showScreen('hub');
+      speak('What would you like to play?');
+    }
+
+    // --- Hub buttons → open game screens ---
+    document.querySelectorAll('.hub-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var game = btn.getAttribute('data-game');
+        showScreen(game);
+
+        // Per-game greeting
+        if (game === 'flash')  initFlashcards();
+        if (game === 'memory') speak("Let's find the pairs!");
+        if (game === 'pony')   speak("Help pony get ready!");
+        if (game === 'count')  speak("Let's count!");
+        if (game === 'drums')  speak("Let's make music!");
+      });
+    });
+
+    // --- All Back buttons → return to Hub ---
+    document.querySelectorAll('.back-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        // Reset flashcard state when leaving
+        resetFlashcards();
+        goToHub();
+      });
+    });
+
+    /* ================================================
+       3.  GAME 1 — DAILY FLASHCARDS
+       ================================================ */
+    var flashWords = [
+      { word: 'Dog',  emoji: '🐶' },
+      { word: 'Cat',  emoji: '🐱' },
+      { word: 'Bed',  emoji: '🛏️' },
+      { word: 'Cup',  emoji: '🥤' },
+      { word: 'Ball', emoji: '⚽' }
+    ];
+
+    var flashIndex    = 0;   // current position in the deck
+    var flashIsFlipped = false;
+    var flashBusy      = false; // lock during animation
+
+    var flashcard      = document.querySelector('.flashcard');
+    var frontEmoji     = document.getElementById('flash-front-emoji');
+    var frontWord      = document.getElementById('flash-front-word');
+    var backEmoji      = document.getElementById('flash-back-emoji');
+    var backWord       = document.getElementById('flash-back-word');
+
+    /** Load a word onto the card faces (un-flipped state). */
+    function loadFlashcard(index) {
+      var item = flashWords[index];
+      // Front: just the big emoji (child sees this first)
+      frontEmoji.textContent = item.emoji;
+      frontWord.textContent  = '';
+      // Back: emoji + word (revealed on flip)
+      backEmoji.textContent  = item.emoji;
+      backWord.textContent   = item.word;
+    }
+
+    /** Called when entering the Flashcards screen. */
+    function initFlashcards() {
+      flashIndex    = 0;
+      flashIsFlipped = false;
+      flashBusy      = false;
+      flashcard.classList.remove('flipped');
+      loadFlashcard(0);
+      speak("Let's learn words!");
+    }
+
+    /** Clean up when leaving the screen. */
+    function resetFlashcards() {
+      flashcard.classList.remove('flipped');
+      flashIsFlipped = false;
+      flashBusy      = false;
+    }
+
+    /** Handle tap on the flashcard. */
+    flashcard.addEventListener('click', function () {
+      if (flashBusy) return; // ignore taps during animation
+
+      if (!flashIsFlipped) {
+        // --- TAP 1: Flip to reveal word ---
+        flashBusy = true;
+        flashcard.classList.add('flipped');
+        flashIsFlipped = true;
+
+        // Wait a moment for the flip to start, then speak
+        setTimeout(function () {
+          speak(flashWords[flashIndex].word);
+          flashBusy = false;
+        }, 350);
+
+      } else {
+        // --- TAP 2: Un-flip, then advance ---
+        flashBusy = true;
+        flashcard.classList.remove('flipped');
+        flashIsFlipped = false;
+
+        // Wait for flip-back animation to finish
+        setTimeout(function () {
+          flashIndex++;
+
+          if (flashIndex < flashWords.length) {
+            // Load the next word
+            loadFlashcard(flashIndex);
+            flashBusy = false;
+          } else {
+            // All done — celebrate!
+            launchConfetti();
+            speak('Great job!', function () {
+              // After praise, pause then return to hub
+              setTimeout(goToHub, 1200);
+            });
+            // Reset for next time
+            flashIndex    = 0;
+            flashIsFlipped = false;
+            loadFlashcard(0);
+            flashBusy = false;
+          }
+        }, 500);
+      }
+    });
+
+    /* ================================================
+       4.  LIGHTWEIGHT CONFETTI EFFECT
+       ================================================ */
+    var confettiColors = [
+      '#FBCFE8', '#BAE6FD', '#BBF7D0',
+      '#FDE68A', '#DDD6FE', '#FED7AA',
+      '#FECACA', '#C4B5FD'
+    ];
+
+    function launchConfetti() {
+      var container = document.createElement('div');
+      container.className = 'confetti-container';
+      document.body.appendChild(container);
+
+      for (var i = 0; i < 40; i++) {
+        var piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left            = Math.random() * 100 + '%';
+        piece.style.backgroundColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+        piece.style.animationDelay  = (Math.random() * 0.8) + 's';
+        piece.style.width           = (8 + Math.random() * 10) + 'px';
+        piece.style.height          = (8 + Math.random() * 10) + 'px';
+        piece.style.borderRadius    = Math.random() > 0.5 ? '50%' : '3px';
+        container.appendChild(piece);
+      }
+
+      // Remove from DOM after animations complete
+      setTimeout(function () {
+        container.remove();
+      }, 3500);
+    }
+
+  })();
+  </script>
 
 </body>
 </html>
