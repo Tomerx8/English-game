@@ -1,0 +1,16 @@
+Modify the index.html file to add the required logic for these two games WITHOUT breaking the existing Flashcards game, the Yoga game, the Hub navigation, the dynamic mascot, or the VUI engine.
+1. Let's Count Game Logic (#count):
+* Dynamic Heuristics: Create an array of countable objects (e.g., ['🍎', '🦆', '⭐', '🚗', '🎈']). Every time the game starts, randomly select an object and randomly pick a target number between 1 and 5.
+* Rendering: Display the selected number of massive emojis on the screen.
+* Interaction: The VUI enthusiastically says: "Let's count! Tap the [object name]!".
+* When the child taps an object: Play the "Pop" SFX. The object should visually scale down or disappear (add a CSS animation for this). The VUI immediately speaks the current count ("One", "Two"...).
+* Win State: When the final object is tapped and counted, display a massive digit (the total number) in the center of the screen. Trigger the confetti, play the "Ding" SFX, and have the VUI say: "Great job! [Number]!".
+1. Rhythm & Syllables Game Logic (#drums):
+* Data Structure: Create a small array of vocabulary words with their syllable counts. E.g., ``.
+* Initialization: Display the chosen emoji in the center and the two massive drums at the bottom. The VUI says: "Let's play the drums! has [Number] beats. Can you tap the drum [Number] times?".
+* Interaction: Every time the child taps ANY drum, play a basic drum sound effect (use a short base64 audio string) and show a quick CSS 'squish' animation on the drum.
+* Evaluation Logic: Keep track of the number of taps. Once the child taps the drum the correct number of times (syllables), wait 1.5 seconds to see if they stop. If they stop at the correct number: Play "Ding", show Confetti, and VUI says "Perfect rhythm!". If they tap too many times, VUI gently says "Whoops! Let's try another one" and loads a new word.
+1. Final Polish:
+* Ensure both new games are properly connected to the Hub.
+* Ensure the Dynamic Mascot reacts properly during these games (🤩 for wins, 🗣️ when speaking).
+* Remember to use window.speechSynthesis.cancel() before new audio. Please implement these features directly into the file and let me know when you are done.
