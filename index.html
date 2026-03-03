@@ -207,86 +207,70 @@
     .hub-btn[data-game="drums"]   { background: var(--pastel-yellow); }
 
     /* ===================================================
-       2.  DAILY FLASHCARDS SCREEN
+       2.  DAILY FLASHCARDS — Proactive Two-Card Layout
        =================================================== */
     #flash {
       background: var(--bg-flash);
       gap: var(--gap-lg);
     }
 
-    .flashcard {
-      width: 280px;
-      height: 380px;
-      perspective: 800px;
-      cursor: pointer;
+    .flash-pair {
+      display: flex;
+      gap: var(--gap-lg);
+      justify-content: center;
+      align-items: stretch;
     }
 
-    .flashcard-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transition: transform 0.6s ease;
-      transform-style: preserve-3d;
+    .flash-choice {
+      width: 155px;
+      height: 210px;
+      border: 4px solid transparent;
       border-radius: var(--radius-lg);
-    }
-
-    .flashcard.flipped .flashcard-inner {
-      transform: rotateY(180deg);
-    }
-
-    .flashcard-face {
-      position: absolute;
-      inset: 0;
-      border-radius: var(--radius-lg);
-      backface-visibility: hidden;
+      background: #FFFFFF;
+      box-shadow: 0 6px 24px var(--btn-shadow);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 16px;
-      box-shadow: 0 8px 30px var(--btn-shadow);
-      padding: var(--gap);
+      gap: 6px;
+      cursor: pointer;
+      padding: 12px;
       overflow: hidden;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.3s ease, background 0.3s ease;
     }
 
-    .flashcard-front {
-      background: #FFFFFF;
+    .flash-choice:hover {
+      transform: scale(1.04);
+      box-shadow: 0 8px 28px var(--btn-shadow);
     }
 
-    .flashcard-emoji {
-      font-size: 120px;
-      line-height: 1;
+    .flash-choice:active {
+      transform: scale(0.95);
     }
 
-    .flashcard-word {
-      font-family: var(--font-balloon);
-      font-size: 40px;
-      font-weight: 700;
-      color: var(--title-color);
-    }
-
-    .flashcard-back {
-      background: var(--pastel-blue);
-      transform: rotateY(180deg);
-    }
-
-    .flashcard-back-icon {
+    .flash-emoji {
       font-size: 80px;
       line-height: 1;
-      opacity: 0.6;
     }
 
-    /* hover / active on flashcard */
-    .flashcard:hover .flashcard-inner {
-      filter: brightness(1.03);
+    .flash-word {
+      font-family: var(--font-balloon);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--title-color);
+      min-height: 36px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
-    .flashcard:active .flashcard-inner {
-      transform: scale(0.96);
+    .flash-word.visible {
+      opacity: 1;
     }
 
-    .flashcard.flipped:active .flashcard-inner {
-      transform: rotateY(180deg) scale(0.96);
+    /* Correct answer glow */
+    .flash-choice.correct {
+      border-color: #86EFAC;
+      background: #F0FFF4;
     }
 
     /* ===================================================
@@ -534,9 +518,9 @@
       .hub-btn         { width: 130px; height: 145px; }
       .hub-emoji       { font-size: 64px; }
       .hub-label       { font-size: 13px; }
-      .flashcard       { width: 240px; height: 320px; }
-      .flashcard-emoji { font-size: 90px; }
-      .flashcard-word  { font-size: 32px; }
+      .flash-choice    { width: 130px; height: 175px; }
+      .flash-emoji     { font-size: 64px; }
+      .flash-word      { font-size: 22px; }
       .pony-character  { width: 130px; height: 130px; font-size: 72px; }
       .pony-btn        { width: 90px;  height: 90px;  font-size: 40px; }
       .count-item      { width: 80px;  height: 80px;  font-size: 48px; }
@@ -554,9 +538,9 @@
       .hub-btn         { width: 200px; height: 220px; }
       .hub-emoji       { font-size: 100px; }
       .hub-label       { font-size: 18px; }
-      .flashcard       { width: 340px; height: 460px; }
-      .flashcard-emoji { font-size: 150px; }
-      .flashcard-word  { font-size: 48px; }
+      .flash-choice    { width: 200px; height: 270px; }
+      .flash-emoji     { font-size: 110px; }
+      .flash-word      { font-size: 36px; }
       .memory-grid     { max-width: 520px; gap: 40px; }
       .card-back       { font-size: 72px; }
       .card-front      { font-size: 80px; }
@@ -574,17 +558,50 @@
       display: none !important;
     }
 
-    /* Flashcard back — when revealed, show emoji + word */
-    .flashcard-back .flashcard-emoji {
-      font-size: 100px;
+    /* ===================================================
+       EMOJI ANIMATIONS — triggered on correct answer
+       =================================================== */
+    .anim-bounce { animation: anim-bounce 0.6s ease 2; }
+    .anim-wiggle { animation: anim-wiggle 0.5s ease 3; }
+    .anim-spin   { animation: anim-spin   0.7s ease 1; }
+    .anim-pulse  { animation: anim-pulse  0.5s ease 3; }
+    .anim-rock   { animation: anim-rock   0.6s ease 3; }
+    .anim-shake  { animation: anim-shake  0.4s ease 1; }
+
+    @keyframes anim-bounce {
+      0%, 100% { transform: translateY(0); }
+      40%      { transform: translateY(-24px); }
+      60%      { transform: translateY(-8px); }
     }
 
-    .flashcard-back .flashcard-word {
-      font-family: var(--font-balloon);
-      font-size: 36px;
-      font-weight: 700;
-      color: #FFFFFF;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    @keyframes anim-wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25%      { transform: rotate(8deg); }
+      75%      { transform: rotate(-8deg); }
+    }
+
+    @keyframes anim-spin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes anim-pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.25); }
+    }
+
+    @keyframes anim-rock {
+      0%, 100% { transform: rotate(0deg); }
+      25%      { transform: rotate(12deg); }
+      75%      { transform: rotate(-12deg); }
+    }
+
+    @keyframes anim-shake {
+      0%, 100% { transform: translateX(0); }
+      20%      { transform: translateX(-12px); }
+      40%      { transform: translateX(12px); }
+      60%      { transform: translateX(-8px); }
+      80%      { transform: translateX(8px); }
     }
 
     /* ===================================================
@@ -663,17 +680,15 @@
   <section id="flash" class="screen">
     <button class="back-btn" aria-label="Back to Hub">🏠</button>
 
-    <div class="flashcard" aria-label="Flashcard">
-      <div class="flashcard-inner">
-        <div class="flashcard-face flashcard-front">
-          <span class="flashcard-emoji" id="flash-front-emoji">🐱</span>
-          <span class="flashcard-word" id="flash-front-word"></span>
-        </div>
-        <div class="flashcard-face flashcard-back">
-          <span class="flashcard-emoji" id="flash-back-emoji">✨</span>
-          <span class="flashcard-word" id="flash-back-word"></span>
-        </div>
-      </div>
+    <div class="flash-pair">
+      <button class="flash-choice" id="flash-left" aria-label="Left choice">
+        <span class="flash-emoji"></span>
+        <span class="flash-word"></span>
+      </button>
+      <button class="flash-choice" id="flash-right" aria-label="Right choice">
+        <span class="flash-emoji"></span>
+        <span class="flash-word"></span>
+      </button>
     </div>
   </section>
 
@@ -765,19 +780,60 @@
     /* ================================================
        1.  VOICE USER INTERFACE (TTS) ENGINE
        ================================================ */
-    const synth = window.speechSynthesis;
+    var synth       = window.speechSynthesis;
+    var bestVoice   = null;
+
+    /* Preferred voice names — checked in priority order */
+    var voicePrefs  = [
+      'google us english', 'samantha', 'victoria',
+      'natural', 'female', 'zira', 'karen', 'moira'
+    ];
 
     /**
-     * Speak a phrase using the Web Speech API.
-     * Cancels any in-progress utterance first to
-     * prevent overlapping audio from rapid taps.
+     * Search loaded voices for the most natural
+     * English female voice available on this device.
+     */
+    function pickVoice() {
+      var voices = synth.getVoices();
+      if (!voices.length) return;
+
+      /* Priority pass: check each preference keyword */
+      for (var p = 0; p < voicePrefs.length; p++) {
+        for (var v = 0; v < voices.length; v++) {
+          var name = voices[v].name.toLowerCase();
+          if (name.indexOf(voicePrefs[p]) !== -1 && voices[v].lang.indexOf('en') === 0) {
+            bestVoice = voices[v];
+            return;
+          }
+        }
+      }
+
+      /* Fallback: any English voice */
+      for (var i = 0; i < voices.length; i++) {
+        if (voices[i].lang.indexOf('en') === 0) {
+          bestVoice = voices[i];
+          return;
+        }
+      }
+    }
+
+    /* Voices load async on most browsers */
+    pickVoice();
+    if (synth.onvoiceschanged !== undefined) {
+      synth.onvoiceschanged = pickVoice;
+    }
+
+    /**
+     * Speak a phrase. Always cancels first to prevent
+     * overlapping audio from rapid toddler taps.
      */
     function speak(text, onEnd) {
       synth.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang  = 'en-US';
-      utter.rate  = 0.85;   // slightly slower for a toddler
-      utter.pitch = 1.1;    // slightly higher / friendlier
+      var utter  = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-US';
+      utter.rate = 0.9;
+      utter.pitch = 1.2;
+      if (bestVoice) utter.voice = bestVoice;
       if (onEnd) utter.onend = onEnd;
       synth.speak(utter);
     }
@@ -785,32 +841,23 @@
     /* ================================================
        2.  NAVIGATION & STATE MANAGEMENT
        ================================================ */
-    const screens = document.querySelectorAll('.screen');
-    const hub     = document.getElementById('hub');
+    var screens = document.querySelectorAll('.screen');
 
-    /**
-     * Show a single screen by id, hiding all others.
-     */
     function showScreen(id) {
-      screens.forEach(function (s) {
-        s.classList.remove('active');
-      });
+      screens.forEach(function (s) { s.classList.remove('active'); });
       document.getElementById(id).classList.add('active');
     }
 
-    /** Navigate to the Hub and greet. */
     function goToHub() {
       showScreen('hub');
       speak('What would you like to play?');
     }
 
-    // --- Hub buttons → open game screens ---
+    /* Hub buttons → open game screens */
     document.querySelectorAll('.hub-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var game = btn.getAttribute('data-game');
         showScreen(game);
-
-        // Per-game greeting
         if (game === 'flash')  initFlashcards();
         if (game === 'memory') speak("Let's find the pairs!");
         if (game === 'pony')   speak("Help pony get ready!");
@@ -819,113 +866,273 @@
       });
     });
 
-    // --- All Back buttons → return to Hub ---
+    /* All Back buttons → return to Hub */
     document.querySelectorAll('.back-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        // Reset flashcard state when leaving
-        resetFlashcards();
+        flashBusy = false;
         goToHub();
       });
     });
 
     /* ================================================
-       3.  GAME 1 — DAILY FLASHCARDS
+       3.  100-WORD VOCABULARY DATABASE
        ================================================ */
-    var flashWords = [
-      { word: 'Dog',  emoji: '🐶' },
-      { word: 'Cat',  emoji: '🐱' },
-      { word: 'Bed',  emoji: '🛏️' },
-      { word: 'Cup',  emoji: '🥤' },
-      { word: 'Ball', emoji: '⚽' }
+    var allWords = [
+      /* -------- Animals (25) -------- */
+      { word: 'Dog',       emoji: '🐶', animation: 'bounce' },
+      { word: 'Cat',       emoji: '🐱', animation: 'wiggle' },
+      { word: 'Bird',      emoji: '🐦', animation: 'bounce' },
+      { word: 'Fish',      emoji: '🐟', animation: 'wiggle' },
+      { word: 'Cow',       emoji: '🐄', animation: 'rock'   },
+      { word: 'Pig',       emoji: '🐷', animation: 'bounce' },
+      { word: 'Duck',      emoji: '🦆', animation: 'wiggle' },
+      { word: 'Horse',     emoji: '🐴', animation: 'rock'   },
+      { word: 'Sheep',     emoji: '🐑', animation: 'rock'   },
+      { word: 'Frog',      emoji: '🐸', animation: 'bounce' },
+      { word: 'Bear',      emoji: '🐻', animation: 'rock'   },
+      { word: 'Rabbit',    emoji: '🐰', animation: 'bounce' },
+      { word: 'Mouse',     emoji: '🐭', animation: 'wiggle' },
+      { word: 'Monkey',    emoji: '🐵', animation: 'bounce' },
+      { word: 'Elephant',  emoji: '🐘', animation: 'rock'   },
+      { word: 'Lion',      emoji: '🦁', animation: 'rock'   },
+      { word: 'Tiger',     emoji: '🐯', animation: 'rock'   },
+      { word: 'Penguin',   emoji: '🐧', animation: 'wiggle' },
+      { word: 'Whale',     emoji: '🐳', animation: 'rock'   },
+      { word: 'Butterfly', emoji: '🦋', animation: 'wiggle' },
+      { word: 'Bee',       emoji: '🐝', animation: 'wiggle' },
+      { word: 'Snail',     emoji: '🐌', animation: 'rock'   },
+      { word: 'Turtle',    emoji: '🐢', animation: 'rock'   },
+      { word: 'Chicken',   emoji: '🐔', animation: 'bounce' },
+      { word: 'Owl',       emoji: '🦉', animation: 'rock'   },
+
+      /* -------- Food (20) -------- */
+      { word: 'Apple',       emoji: '🍎', animation: 'bounce' },
+      { word: 'Banana',      emoji: '🍌', animation: 'rock'   },
+      { word: 'Grapes',      emoji: '🍇', animation: 'bounce' },
+      { word: 'Strawberry',  emoji: '🍓', animation: 'bounce' },
+      { word: 'Watermelon',  emoji: '🍉', animation: 'rock'   },
+      { word: 'Cookie',      emoji: '🍪', animation: 'spin'   },
+      { word: 'Cake',        emoji: '🎂', animation: 'pulse'  },
+      { word: 'Bread',       emoji: '🍞', animation: 'rock'   },
+      { word: 'Cheese',      emoji: '🧀', animation: 'wiggle' },
+      { word: 'Egg',         emoji: '🥚', animation: 'rock'   },
+      { word: 'Pizza',       emoji: '🍕', animation: 'spin'   },
+      { word: 'Rice',        emoji: '🍚', animation: 'pulse'  },
+      { word: 'Corn',        emoji: '🌽', animation: 'rock'   },
+      { word: 'Carrot',      emoji: '🥕', animation: 'bounce' },
+      { word: 'Broccoli',    emoji: '🥦', animation: 'wiggle' },
+      { word: 'Tomato',      emoji: '🍅', animation: 'bounce' },
+      { word: 'Ice Cream',   emoji: '🍦', animation: 'rock'   },
+      { word: 'Candy',       emoji: '🍬', animation: 'spin'   },
+      { word: 'Milk',        emoji: '🥛', animation: 'rock'   },
+      { word: 'Juice',       emoji: '🧃', animation: 'bounce' },
+
+      /* -------- Home & Objects (20) -------- */
+      { word: 'Bed',    emoji: '🛏️', animation: 'rock'   },
+      { word: 'Chair',  emoji: '🪑', animation: 'rock'   },
+      { word: 'Door',   emoji: '🚪', animation: 'rock'   },
+      { word: 'Key',    emoji: '🔑', animation: 'spin'   },
+      { word: 'Book',   emoji: '📖', animation: 'wiggle' },
+      { word: 'Clock',  emoji: '🕐', animation: 'spin'   },
+      { word: 'Lamp',   emoji: '💡', animation: 'pulse'  },
+      { word: 'Bath',   emoji: '🛁', animation: 'rock'   },
+      { word: 'Soap',   emoji: '🧼', animation: 'wiggle' },
+      { word: 'Shoe',   emoji: '👟', animation: 'bounce' },
+      { word: 'Hat',    emoji: '🎩', animation: 'bounce' },
+      { word: 'Shirt',  emoji: '👕', animation: 'wiggle' },
+      { word: 'Sock',   emoji: '🧦', animation: 'wiggle' },
+      { word: 'Phone',  emoji: '📱', animation: 'pulse'  },
+      { word: 'Car',    emoji: '🚗', animation: 'rock'   },
+      { word: 'Bus',    emoji: '🚌', animation: 'rock'   },
+      { word: 'Train',  emoji: '🚂', animation: 'rock'   },
+      { word: 'Bike',   emoji: '🚲', animation: 'rock'   },
+      { word: 'Ball',   emoji: '⚽', animation: 'spin'   },
+      { word: 'Toy',    emoji: '🧸', animation: 'wiggle' },
+
+      /* -------- Nature & Colors (15) -------- */
+      { word: 'Sun',     emoji: '☀️', animation: 'pulse'  },
+      { word: 'Moon',    emoji: '🌙', animation: 'rock'   },
+      { word: 'Star',    emoji: '⭐', animation: 'spin'   },
+      { word: 'Cloud',   emoji: '☁️', animation: 'rock'   },
+      { word: 'Rain',    emoji: '🌧️', animation: 'wiggle' },
+      { word: 'Rainbow', emoji: '🌈', animation: 'pulse'  },
+      { word: 'Flower',  emoji: '🌸', animation: 'wiggle' },
+      { word: 'Tree',    emoji: '🌳', animation: 'rock'   },
+      { word: 'Leaf',    emoji: '🍃', animation: 'wiggle' },
+      { word: 'Rock',    emoji: '🪨', animation: 'rock'   },
+      { word: 'Fire',    emoji: '🔥', animation: 'pulse'  },
+      { word: 'Snow',    emoji: '❄️', animation: 'spin'   },
+      { word: 'Water',   emoji: '💧', animation: 'wiggle' },
+      { word: 'Heart',   emoji: '❤️', animation: 'pulse'  },
+      { word: 'Diamond', emoji: '💎', animation: 'spin'   },
+
+      /* -------- Body, People & Actions (20) -------- */
+      { word: 'Baby',   emoji: '👶', animation: 'rock'   },
+      { word: 'Boy',    emoji: '👦', animation: 'bounce' },
+      { word: 'Girl',   emoji: '👧', animation: 'bounce' },
+      { word: 'Hand',   emoji: '✋', animation: 'wiggle' },
+      { word: 'Foot',   emoji: '🦶', animation: 'bounce' },
+      { word: 'Eye',    emoji: '👁️', animation: 'pulse'  },
+      { word: 'Ear',    emoji: '👂', animation: 'wiggle' },
+      { word: 'Nose',   emoji: '👃', animation: 'wiggle' },
+      { word: 'Mouth',  emoji: '👄', animation: 'pulse'  },
+      { word: 'Tooth',  emoji: '🦷', animation: 'bounce' },
+      { word: 'Run',    emoji: '🏃', animation: 'bounce' },
+      { word: 'Dance',  emoji: '💃', animation: 'spin'   },
+      { word: 'Sing',   emoji: '🎤', animation: 'rock'   },
+      { word: 'Sleep',  emoji: '😴', animation: 'rock'   },
+      { word: 'Cry',    emoji: '😢', animation: 'rock'   },
+      { word: 'Laugh',  emoji: '😂', animation: 'bounce' },
+      { word: 'Wave',   emoji: '👋', animation: 'wiggle' },
+      { word: 'Clap',   emoji: '👏', animation: 'pulse'  },
+      { word: 'Kiss',   emoji: '😘', animation: 'pulse'  },
+      { word: 'Hug',    emoji: '🤗', animation: 'rock'   }
     ];
 
-    var flashIndex    = 0;   // current position in the deck
-    var flashIsFlipped = false;
-    var flashBusy      = false; // lock during animation
-
-    var flashcard      = document.querySelector('.flashcard');
-    var frontEmoji     = document.getElementById('flash-front-emoji');
-    var frontWord      = document.getElementById('flash-front-word');
-    var backEmoji      = document.getElementById('flash-back-emoji');
-    var backWord       = document.getElementById('flash-back-word');
-
-    /** Load a word onto the card faces (un-flipped state). */
-    function loadFlashcard(index) {
-      var item = flashWords[index];
-      // Front: just the big emoji (child sees this first)
-      frontEmoji.textContent = item.emoji;
-      frontWord.textContent  = '';
-      // Back: emoji + word (revealed on flip)
-      backEmoji.textContent  = item.emoji;
-      backWord.textContent   = item.word;
-    }
-
-    /** Called when entering the Flashcards screen. */
-    function initFlashcards() {
-      flashIndex    = 0;
-      flashIsFlipped = false;
-      flashBusy      = false;
-      flashcard.classList.remove('flipped');
-      loadFlashcard(0);
-      speak("Let's learn words!");
-    }
-
-    /** Clean up when leaving the screen. */
-    function resetFlashcards() {
-      flashcard.classList.remove('flipped');
-      flashIsFlipped = false;
-      flashBusy      = false;
-    }
-
-    /** Handle tap on the flashcard. */
-    flashcard.addEventListener('click', function () {
-      if (flashBusy) return; // ignore taps during animation
-
-      if (!flashIsFlipped) {
-        // --- TAP 1: Flip to reveal word ---
-        flashBusy = true;
-        flashcard.classList.add('flipped');
-        flashIsFlipped = true;
-
-        // Wait a moment for the flip to start, then speak
-        setTimeout(function () {
-          speak(flashWords[flashIndex].word);
-          flashBusy = false;
-        }, 350);
-
-      } else {
-        // --- TAP 2: Un-flip, then advance ---
-        flashBusy = true;
-        flashcard.classList.remove('flipped');
-        flashIsFlipped = false;
-
-        // Wait for flip-back animation to finish
-        setTimeout(function () {
-          flashIndex++;
-
-          if (flashIndex < flashWords.length) {
-            // Load the next word
-            loadFlashcard(flashIndex);
-            flashBusy = false;
-          } else {
-            // All done — celebrate!
-            launchConfetti();
-            speak('Great job!', function () {
-              // After praise, pause then return to hub
-              setTimeout(goToHub, 1200);
-            });
-            // Reset for next time
-            flashIndex    = 0;
-            flashIsFlipped = false;
-            loadFlashcard(0);
-            flashBusy = false;
-          }
-        }, 500);
+    /** Fisher-Yates (Knuth) shuffle — in-place. */
+    function shuffle(arr) {
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
       }
-    });
+      return arr;
+    }
 
     /* ================================================
-       4.  LIGHTWEIGHT CONFETTI EFFECT
+       4.  GAME 1 — DAILY FLASHCARDS (Proactive)
+       ================================================ */
+    var ROUNDS_PER_SESSION = 5;
+    var flashDeck  = [];    // shuffled slice for this session
+    var flashIndex = 0;
+    var flashBusy  = false;
+    var targetSide = '';    // 'left' or 'right'
+
+    var leftBtn   = document.getElementById('flash-left');
+    var rightBtn  = document.getElementById('flash-right');
+    var leftEmoji  = leftBtn.querySelector('.flash-emoji');
+    var leftWord   = leftBtn.querySelector('.flash-word');
+    var rightEmoji = rightBtn.querySelector('.flash-emoji');
+    var rightWord  = rightBtn.querySelector('.flash-word');
+
+    /** Pick a pair: target + one distractor */
+    function loadRound() {
+      var target = flashDeck[flashIndex];
+
+      /* Pick a random distractor that isn't the target */
+      var distractor;
+      do {
+        distractor = allWords[Math.floor(Math.random() * allWords.length)];
+      } while (distractor.word === target.word);
+
+      /* Randomly place target on left or right */
+      targetSide = Math.random() < 0.5 ? 'left' : 'right';
+
+      var leftItem  = targetSide === 'left'  ? target : distractor;
+      var rightItem = targetSide === 'right' ? target : distractor;
+
+      /* Populate cards — emoji only, word hidden */
+      leftEmoji.textContent  = leftItem.emoji;
+      leftWord.textContent   = leftItem.word;
+      leftWord.classList.remove('visible');
+      leftBtn.classList.remove('correct');
+      leftBtn.dataset.word      = leftItem.word;
+      leftBtn.dataset.animation = leftItem.animation;
+
+      rightEmoji.textContent  = rightItem.emoji;
+      rightWord.textContent   = rightItem.word;
+      rightWord.classList.remove('visible');
+      rightBtn.classList.remove('correct');
+      rightBtn.dataset.word      = rightItem.word;
+      rightBtn.dataset.animation = rightItem.animation;
+
+      /* Clear any leftover animations */
+      clearAnim(leftEmoji);
+      clearAnim(rightEmoji);
+    }
+
+    function clearAnim(el) {
+      el.classList.remove('anim-bounce', 'anim-wiggle', 'anim-spin', 'anim-pulse', 'anim-rock', 'anim-shake');
+    }
+
+    function triggerAnim(el, name) {
+      clearAnim(el);
+      /* Force reflow so re-adding the same class restarts the animation */
+      void el.offsetWidth;
+      el.classList.add('anim-' + name);
+    }
+
+    /** Ask the question for the current round. */
+    function askQuestion() {
+      var word = flashDeck[flashIndex].word;
+      speak('Where is the ' + word + '?');
+    }
+
+    /** Initialise a new flashcard session. */
+    function initFlashcards() {
+      flashIndex = 0;
+      flashBusy  = false;
+      shuffle(allWords);
+      flashDeck = allWords.slice(0, ROUNDS_PER_SESSION);
+      loadRound();
+      speak("Let's play! Can you find the right picture?", function () {
+        askQuestion();
+      });
+    }
+
+    /** Handle a choice tap. */
+    function handleChoice(side) {
+      if (flashBusy) return;
+      flashBusy = true;
+
+      var isCorrect = (side === targetSide);
+      var tappedBtn   = side === 'left' ? leftBtn   : rightBtn;
+      var tappedEmoji = side === 'left' ? leftEmoji : rightEmoji;
+      var tappedWord  = side === 'left' ? leftWord  : rightWord;
+      var correctBtn   = targetSide === 'left' ? leftBtn   : rightBtn;
+      var correctEmoji = targetSide === 'left' ? leftEmoji : rightEmoji;
+      var correctWord  = targetSide === 'left' ? leftWord  : rightWord;
+
+      if (isCorrect) {
+        /* --- CORRECT --- */
+        tappedBtn.classList.add('correct');
+        triggerAnim(tappedEmoji, tappedBtn.dataset.animation);
+        tappedWord.classList.add('visible');
+
+        speak('Yes! ' + flashDeck[flashIndex].word + '!', function () {
+          /* Wait 2s then advance */
+          setTimeout(function () {
+            flashIndex++;
+            if (flashIndex < flashDeck.length) {
+              loadRound();
+              flashBusy = false;
+              askQuestion();
+            } else {
+              /* Session complete! */
+              launchConfetti();
+              speak('Great job!', function () {
+                setTimeout(goToHub, 1500);
+              });
+            }
+          }, 2000);
+        });
+
+      } else {
+        /* --- INCORRECT — gentle retry --- */
+        triggerAnim(tappedEmoji, 'shake');
+        var word = flashDeck[flashIndex].word;
+        speak('Oops, try again! Where is the ' + word + '?', function () {
+          flashBusy = false;
+        });
+      }
+    }
+
+    leftBtn.addEventListener('click', function ()  { handleChoice('left');  });
+    rightBtn.addEventListener('click', function () { handleChoice('right'); });
+
+    /* ================================================
+       5.  LIGHTWEIGHT CONFETTI EFFECT
        ================================================ */
     var confettiColors = [
       '#FBCFE8', '#BAE6FD', '#BBF7D0',
@@ -938,7 +1145,7 @@
       container.className = 'confetti-container';
       document.body.appendChild(container);
 
-      for (var i = 0; i < 40; i++) {
+      for (var i = 0; i < 50; i++) {
         var piece = document.createElement('div');
         piece.className = 'confetti-piece';
         piece.style.left            = Math.random() * 100 + '%';
@@ -950,10 +1157,7 @@
         container.appendChild(piece);
       }
 
-      // Remove from DOM after animations complete
-      setTimeout(function () {
-        container.remove();
-      }, 3500);
+      setTimeout(function () { container.remove(); }, 3500);
     }
 
   })();
