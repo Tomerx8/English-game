@@ -511,11 +511,23 @@
       justify-content: center;
       font-size: 60px;
       line-height: 1;
-      transition: transform 0.15s ease;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.3s ease;
     }
 
     .count-item:active {
       transform: scale(0.92);
+    }
+
+    .count-item.popped {
+      animation: count-pop 0.4s ease forwards;
+      pointer-events: none;
+    }
+
+    @keyframes count-pop {
+      0%   { transform: scale(1);   opacity: 1; }
+      50%  { transform: scale(1.4); opacity: 0.5; }
+      100% { transform: scale(0);   opacity: 0; }
     }
 
     .count-number {
@@ -585,6 +597,24 @@
     .drum:active {
       transform: scale(0.9);
       box-shadow: 0 2px 8px var(--btn-shadow), inset 0 2px 0 rgba(0,0,0,0.04);
+    }
+
+    .drum.squish {
+      animation: drum-squish 0.15s ease;
+    }
+
+    @keyframes drum-squish {
+      0%   { transform: scale(1); }
+      50%  { transform: scaleX(1.1) scaleY(0.85); }
+      100% { transform: scale(1); }
+    }
+
+    .drums-word {
+      font-family: var(--font-balloon);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--title-color);
+      text-align: center;
     }
 
     /* ===================================================
@@ -1022,14 +1052,11 @@
        ============================================== -->
   <section id="count" class="screen">
     <button class="back-btn" aria-label="Back to Hub">🏠</button>
+    <div class="mascot" id="count-mascot" aria-hidden="true">🦉</div>
 
-    <div class="count-objects">
-      <div class="count-item" aria-label="Apple 1">🍎</div>
-      <div class="count-item" aria-label="Apple 2">🍎</div>
-      <div class="count-item" aria-label="Apple 3">🍎</div>
-    </div>
+    <div class="count-objects" id="count-objects"></div>
 
-    <div class="count-number" aria-label="Number display">3</div>
+    <div class="count-number hidden" id="count-number" aria-label="Number display"></div>
   </section>
 
   <!-- ==============================================
@@ -1037,8 +1064,10 @@
        ============================================== -->
   <section id="drums" class="screen">
     <button class="back-btn" aria-label="Back to Hub">🏠</button>
+    <div class="mascot" id="drums-mascot" aria-hidden="true">🦉</div>
 
-    <div class="drums-image" aria-label="Word image">🐶</div>
+    <div class="drums-image" id="drums-image" aria-label="Word image">🐶</div>
+    <div class="drums-word" id="drums-word"></div>
 
     <div class="drums-row">
       <button class="drum" aria-label="Drum left">🥁</button>
@@ -1213,6 +1242,36 @@
       osc2.stop(now + 0.25);
     }
 
+    /** Drum hit — low punchy noise burst (100ms). */
+    function playDrumHit() {
+      var ctx  = ensureAudioCtx();
+      var now  = ctx.currentTime;
+      /* Noise via oscillator — low triangle burst */
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(60, now + 0.1);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.1);
+      /* Click transient for attack */
+      var osc2  = ctx.createOscillator();
+      var gain2 = ctx.createGain();
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(800, now);
+      osc2.frequency.exponentialRampToValueAtTime(200, now + 0.03);
+      gain2.gain.setValueAtTime(0.15, now);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now);
+      osc2.stop(now + 0.05);
+    }
+
     /* -----------------------------------------------
        Dynamic Mascot — emoji changes with game state
        ----------------------------------------------- */
@@ -1225,6 +1284,8 @@
       flash  : document.getElementById('flash-mascot'),
       memory : document.getElementById('memory-mascot'),
       pony   : document.getElementById('pony-mascot'),
+      count  : document.getElementById('count-mascot'),
+      drums  : document.getElementById('drums-mascot'),
       yoga   : document.getElementById('yoga-mascot')
     };
     var activeMascot = null;
@@ -1327,9 +1388,9 @@
         if (game === 'flash')  { initFlashcards(); return; }
         if (game === 'memory') { initMemory();     return; }
         if (game === 'pony')   { initPony();        return; }
+        if (game === 'count')  { initCount();       return; }
+        if (game === 'drums')  { initDrums();       return; }
         if (game === 'yoga')   { initYoga();        return; }
-        if (game === 'count')  speak("Let's count!");
-        if (game === 'drums')  speak("Let's make music!");
       });
     });
 
@@ -1341,6 +1402,9 @@
         yogaBusy     = false;
         ponyBusy     = false;
         memoryLocked = false;
+        countBusy    = false;
+        drumsBusy    = false;
+        clearTimeout(drumsTimer);
         goToHub();
       });
     });
@@ -1876,7 +1940,198 @@
     });
 
     /* ================================================
-       6.  GAME — YOGA & STRETCHING
+       7.  GAME — LET'S COUNT
+       ================================================ */
+    var countObjects = [
+      { emoji: '🍎', name: 'apple'   },
+      { emoji: '🦆', name: 'duck'    },
+      { emoji: '⭐', name: 'star'    },
+      { emoji: '🚗', name: 'car'     },
+      { emoji: '🎈', name: 'balloon' },
+      { emoji: '🐟', name: 'fish'    },
+      { emoji: '🍪', name: 'cookie'  },
+      { emoji: '🌸', name: 'flower'  }
+    ];
+
+    var numberWords = ['', 'One', 'Two', 'Three', 'Four', 'Five'];
+
+    var countObjectsEl = document.getElementById('count-objects');
+    var countNumberEl  = document.getElementById('count-number');
+    var countTarget    = 0;
+    var countTapped    = 0;
+    var countBusy      = false;
+    var countObj       = null;
+
+    function initCount() {
+      countBusy   = false;
+      countTapped = 0;
+
+      /* Pick a random object and target number (1–5) */
+      countObj    = countObjects[Math.floor(Math.random() * countObjects.length)];
+      countTarget = Math.floor(Math.random() * 5) + 1;
+
+      /* Hide the number display */
+      countNumberEl.classList.add('hidden');
+      countNumberEl.textContent = '';
+
+      /* Render the emojis */
+      countObjectsEl.innerHTML = '';
+      for (var i = 0; i < countTarget; i++) {
+        var item = document.createElement('div');
+        item.className = 'count-item';
+        item.setAttribute('aria-label', countObj.name + ' ' + (i + 1));
+        item.textContent = countObj.emoji;
+        countObjectsEl.appendChild(item);
+      }
+
+      speak("Let's count! Tap the " + countObj.name + "!");
+    }
+
+    /* Handle count item taps via event delegation */
+    countObjectsEl.addEventListener('click', function (e) {
+      if (countBusy) return;
+      var item = e.target.closest('.count-item');
+      if (!item || item.classList.contains('popped')) return;
+
+      countBusy = true;
+      playPop();
+
+      /* Pop the item */
+      item.classList.add('popped');
+      countTapped++;
+
+      var currentCount = countTapped;
+
+      if (currentCount < countTarget) {
+        /* Speak the number, then unlock */
+        speak(numberWords[currentCount], function () {
+          countBusy = false;
+        });
+      } else {
+        /* Final object tapped — win state! */
+        speak(numberWords[currentCount], function () {
+          /* Show the massive digit */
+          countNumberEl.textContent = countTarget;
+          countNumberEl.classList.remove('hidden');
+
+          playDing();
+          launchConfetti();
+          mascotReact('correct');
+
+          speak('Great job! ' + numberWords[countTarget] + '!', function () {
+            setTimeout(function () {
+              /* Play another round */
+              initCount();
+            }, 2000);
+          });
+        });
+      }
+    });
+
+    /* ================================================
+       8.  GAME — RHYTHM & SYLLABLES (DRUMS)
+       ================================================ */
+    var drumsVocab = [
+      { word: 'Dog',        emoji: '🐶', syllables: 1 },
+      { word: 'Cat',        emoji: '🐱', syllables: 1 },
+      { word: 'Apple',      emoji: '🍎', syllables: 2 },
+      { word: 'Monkey',     emoji: '🐵', syllables: 2 },
+      { word: 'Banana',     emoji: '🍌', syllables: 3 },
+      { word: 'Elephant',   emoji: '🐘', syllables: 3 },
+      { word: 'Butterfly',  emoji: '🦋', syllables: 3 },
+      { word: 'Dinosaur',   emoji: '🦕', syllables: 3 },
+      { word: 'Watermelon', emoji: '🍉', syllables: 4 },
+      { word: 'Caterpillar',emoji: '🐛', syllables: 4 },
+      { word: 'Tiger',      emoji: '🐯', syllables: 2 },
+      { word: 'Rabbit',     emoji: '🐰', syllables: 2 },
+      { word: 'Penguin',    emoji: '🐧', syllables: 2 },
+      { word: 'Strawberry', emoji: '🍓', syllables: 3 },
+      { word: 'Broccoli',   emoji: '🥦', syllables: 3 }
+    ];
+
+    var drumsImageEl = document.getElementById('drums-image');
+    var drumsWordEl  = document.getElementById('drums-word');
+    var drumBtns     = document.querySelectorAll('.drum');
+    var drumsBusy    = false;
+    var drumsTaps    = 0;
+    var drumsTarget  = 0;
+    var drumsTimer   = null;
+    var drumsCurrentWord = null;
+
+    function initDrums() {
+      drumsBusy  = false;
+      drumsTaps  = 0;
+      clearTimeout(drumsTimer);
+
+      /* Pick a random word */
+      drumsCurrentWord = drumsVocab[Math.floor(Math.random() * drumsVocab.length)];
+      drumsTarget      = drumsCurrentWord.syllables;
+
+      /* Update display */
+      drumsImageEl.textContent = drumsCurrentWord.emoji;
+      drumsWordEl.textContent  = drumsCurrentWord.word;
+
+      speak("Let's play the drums! " + drumsCurrentWord.word + ' has ' + drumsTarget + ' beats. Can you tap the drum ' + drumsTarget + ' times?');
+    }
+
+    function loadNewDrumsWord() {
+      drumsTaps = 0;
+      drumsBusy = false;
+      clearTimeout(drumsTimer);
+
+      drumsCurrentWord = drumsVocab[Math.floor(Math.random() * drumsVocab.length)];
+      drumsTarget      = drumsCurrentWord.syllables;
+
+      drumsImageEl.textContent = drumsCurrentWord.emoji;
+      drumsWordEl.textContent  = drumsCurrentWord.word;
+
+      speak("Let's try this one! " + drumsCurrentWord.word + ' has ' + drumsTarget + ' beats. Tap the drum ' + drumsTarget + ' times!');
+    }
+
+    /* Handle drum taps */
+    drumBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (drumsBusy) return;
+
+        playDrumHit();
+
+        /* Squish animation */
+        btn.classList.remove('squish');
+        void btn.offsetWidth;
+        btn.classList.add('squish');
+
+        drumsTaps++;
+        clearTimeout(drumsTimer);
+
+        if (drumsTaps > drumsTarget) {
+          /* Too many taps */
+          drumsBusy = true;
+          mascotReact('wrong');
+          playWomp();
+          speak("Whoops! Let's try another one!", function () {
+            setTimeout(loadNewDrumsWord, 1500);
+          });
+          return;
+        }
+
+        if (drumsTaps === drumsTarget) {
+          /* Correct count reached — wait 1.5s to see if they stop */
+          drumsTimer = setTimeout(function () {
+            /* They stopped at the right number! */
+            drumsBusy = true;
+            playDing();
+            launchConfetti();
+            mascotReact('correct');
+            speak('Perfect rhythm!', function () {
+              setTimeout(loadNewDrumsWord, 2000);
+            });
+          }, 1500);
+        }
+      });
+    });
+
+    /* ================================================
+       9.  GAME — YOGA & STRETCHING
        ================================================ */
     var yogaPoses = [
       { name: 'Downward Dog',  emoji: '🐶', animation: 'bounce' },
