@@ -205,6 +205,7 @@
     .hub-btn[data-game="pony"]    { background: var(--pastel-pink);   }
     .hub-btn[data-game="count"]   { background: var(--pastel-green);  }
     .hub-btn[data-game="drums"]   { background: var(--pastel-yellow); }
+    .hub-btn[data-game="yoga"]    { background: #CCFBF1;              } /* soft teal */
 
     /* ===================================================
        2.  DAILY FLASHCARDS — Proactive Two-Card Layout
@@ -511,45 +512,97 @@
     }
 
     /* ===================================================
+       7.  YOGA & STRETCHING SCREEN
+       =================================================== */
+    #yoga {
+      background: #F0FDFA;   /* very soft teal */
+      gap: var(--gap-lg);
+      justify-content: center;
+    }
+
+    .yoga-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--gap);
+      cursor: pointer;
+      /* entire stage is the tap target */
+      padding: var(--gap);
+      border-radius: var(--radius-lg);
+      transition: transform 0.15s ease;
+    }
+
+    .yoga-stage:active {
+      transform: scale(0.97);
+    }
+
+    .yoga-emoji {
+      font-size: 130px;
+      line-height: 1;
+      /* animation class is toggled by JS */
+    }
+
+    .yoga-word {
+      font-family: var(--font-balloon);
+      font-size: 34px;
+      font-weight: 700;
+      color: #0F766E;        /* teal title */
+      min-height: 44px;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .yoga-word.visible {
+      opacity: 1;
+    }
+
+    /* ===================================================
        RESPONSIVE — Small phones (≤ 380px)
        =================================================== */
     @media (max-width: 380px) {
-      .hub-title       { font-size: 21px; }
-      .hub-btn         { width: 130px; height: 145px; }
-      .hub-emoji       { font-size: 64px; }
-      .hub-label       { font-size: 13px; }
-      .flash-choice    { width: 130px; height: 175px; }
-      .flash-emoji     { font-size: 64px; }
-      .flash-word      { font-size: 22px; }
-      .pony-character  { width: 130px; height: 130px; font-size: 72px; }
-      .pony-btn        { width: 90px;  height: 90px;  font-size: 40px; }
-      .count-item      { width: 80px;  height: 80px;  font-size: 48px; }
-      .count-number    { width: 130px; height: 130px; font-size: 64px; }
-      .drum            { width: 110px; height: 110px; font-size: 48px; }
-      .drums-image     { width: 130px; height: 130px; font-size: 72px; }
+      .hub-title            { font-size: 21px; }
+      .hub-btn              { width: 110px; height: 125px; }
+      .hub-emoji            { font-size: 56px; }
+      .hub-label            { font-size: 12px; }
+      .flash-choice         { width: 130px; height: 175px; }
+      .flash-emoji          { font-size: 64px; }
+      .flash-word           { font-size: 22px; }
+      .mascot               { width: 54px; height: 54px; font-size: 28px; }
+      .yoga-emoji           { font-size: 100px; }
+      .yoga-word            { font-size: 26px; }
+      .pony-character       { width: 130px; height: 130px; font-size: 72px; }
+      .pony-btn             { width: 90px;  height: 90px;  font-size: 40px; }
+      .count-item           { width: 80px;  height: 80px;  font-size: 48px; }
+      .count-number         { width: 130px; height: 130px; font-size: 64px; }
+      .drum                 { width: 110px; height: 110px; font-size: 48px; }
+      .drums-image          { width: 130px; height: 130px; font-size: 72px; }
+      .memory-level-btn     { width: 90px;  height: 90px;  font-size: 38px; }
     }
 
     /* ===================================================
        RESPONSIVE — Tablets / landscape (≥ 768px)
        =================================================== */
     @media (min-width: 768px) {
-      .hub-title       { font-size: 34px; }
-      .hub-grid        { max-width: 750px; gap: 36px; }
-      .hub-btn         { width: 200px; height: 220px; }
-      .hub-emoji       { font-size: 100px; }
-      .hub-label       { font-size: 18px; }
-      .flash-choice    { width: 200px; height: 270px; }
-      .flash-emoji     { font-size: 110px; }
-      .flash-word      { font-size: 36px; }
-      .memory-grid     { max-width: 520px; gap: 40px; }
-      .card-back       { font-size: 72px; }
-      .card-front      { font-size: 80px; }
-      .pony-character  { width: 200px; height: 200px; font-size: 110px; }
-      .pony-btn        { width: 140px; height: 140px; font-size: 64px; }
-      .count-item      { width: 130px; height: 130px; font-size: 76px; }
-      .count-number    { width: 200px; height: 200px; font-size: 100px; }
-      .drum            { width: 170px; height: 170px; font-size: 76px; }
-      .drums-image     { width: 200px; height: 200px; font-size: 110px; }
+      .hub-title            { font-size: 34px; }
+      .hub-grid             { max-width: 750px; gap: 36px; }
+      .hub-btn              { width: 200px; height: 220px; }
+      .hub-emoji            { font-size: 100px; }
+      .hub-label            { font-size: 18px; }
+      .flash-choice         { width: 200px; height: 270px; }
+      .flash-emoji          { font-size: 110px; }
+      .flash-word           { font-size: 36px; }
+      .memory-grid          { max-width: 520px; gap: 40px; }
+      .memory-level-btn     { width: 140px; height: 140px; font-size: 60px; }
+      .card-back            { font-size: 72px; }
+      .card-front           { font-size: 80px; }
+      .pony-character       { width: 200px; height: 200px; font-size: 110px; }
+      .pony-btn             { width: 140px; height: 140px; font-size: 64px; }
+      .count-item           { width: 130px; height: 130px; font-size: 76px; }
+      .count-number         { width: 200px; height: 200px; font-size: 100px; }
+      .drum                 { width: 170px; height: 170px; font-size: 76px; }
+      .drums-image          { width: 200px; height: 200px; font-size: 110px; }
+      .yoga-emoji           { font-size: 180px; }
+      .yoga-word            { font-size: 46px; }
     }
     /* ===================================================
        UTILITY — JS state classes
@@ -603,6 +656,114 @@
       60%      { transform: translateX(-8px); }
       80%      { transform: translateX(8px); }
     }
+
+    /* ===================================================
+       PROGRESS BAR — Flashcards game
+       =================================================== */
+    .progress-track {
+      width: 80%;
+      max-width: 360px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #86EFAC, #4ADE80);
+      border-radius: var(--radius-full);
+      transition: width 0.5s ease;
+    }
+
+    /* ===================================================
+       SPEAKING MASCOT — VUI visual anchor
+       =================================================== */
+    .mascot {
+      position: absolute;
+      top: var(--gap);
+      right: var(--gap);
+      width: 70px;
+      height: 70px;
+      border-radius: var(--radius-full);
+      background: #FFFFFF;
+      box-shadow: 0 4px 14px var(--btn-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      line-height: 1;
+      z-index: 10;
+      transition: transform 0.2s ease;
+    }
+
+    .mascot.speaking {
+      animation: mascot-pulse 0.8s ease infinite;
+    }
+
+    @keyframes mascot-pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.15); }
+    }
+
+    /* ===================================================
+       MEMORY — Difficulty Selector Menu
+       =================================================== */
+    .memory-menu {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--gap);
+    }
+
+    .memory-menu-title {
+      font-family: var(--font-balloon);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--title-color);
+    }
+
+    .memory-levels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--gap);
+      justify-content: center;
+    }
+
+    .memory-level-btn {
+      width: 110px;
+      height: 110px;
+      border: none;
+      border-radius: var(--radius-lg);
+      background: #FFFFFF;
+      box-shadow: 0 6px 20px var(--btn-shadow);
+      font-family: var(--font-balloon);
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--title-color);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .memory-level-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 8px 28px var(--btn-shadow);
+    }
+
+    .memory-level-btn:active {
+      transform: scale(0.94);
+      box-shadow: 0 2px 8px var(--btn-shadow);
+    }
+
+    .memory-level-btn:nth-child(1) { background: var(--pastel-green);  }
+    .memory-level-btn:nth-child(2) { background: var(--pastel-blue);   }
+    .memory-level-btn:nth-child(3) { background: var(--pastel-orange); }
+    .memory-level-btn:nth-child(4) { background: var(--pastel-pink);   }
 
     /* ===================================================
        CONFETTI — lightweight CSS + JS celebration
@@ -670,6 +831,10 @@
         <span class="hub-emoji">🥁</span>
         <span class="hub-label">Music &amp; Rhythm</span>
       </button>
+      <button class="hub-btn" data-game="yoga" aria-label="Yoga and Stretching">
+        <span class="hub-emoji">🧘</span>
+        <span class="hub-label">Yoga &amp; Stretch</span>
+      </button>
     </div>
 
   </section>
@@ -679,6 +844,11 @@
        ============================================== -->
   <section id="flash" class="screen">
     <button class="back-btn" aria-label="Back to Hub">🏠</button>
+    <div class="mascot" id="flash-mascot" aria-hidden="true">🦉</div>
+
+    <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="progress-fill" id="flash-progress"></div>
+    </div>
 
     <div class="flash-pair">
       <button class="flash-choice" id="flash-left" aria-label="Left choice">
@@ -697,8 +867,20 @@
        ============================================== -->
   <section id="memory" class="screen">
     <button class="back-btn" aria-label="Back to Hub">🏠</button>
+    <div class="mascot" id="memory-mascot" aria-hidden="true">🦉</div>
 
-    <div class="memory-grid">
+    <!-- Difficulty selector — shown first -->
+    <div class="memory-menu" id="memory-menu">
+      <p class="memory-menu-title" aria-label="How many cards?">🤡</p>
+      <div class="memory-levels">
+        <button class="memory-level-btn" data-count="4"  aria-label="4 cards">4</button>
+        <button class="memory-level-btn" data-count="8"  aria-label="8 cards">8</button>
+        <button class="memory-level-btn" data-count="12" aria-label="12 cards">12</button>
+      </div>
+    </div>
+
+    <!-- Card grid — hidden until difficulty chosen -->
+    <div class="memory-grid hidden" id="memory-grid">
       <div class="card" aria-label="Card 1">
         <div class="card-inner">
           <div class="card-face card-back">🤡</div>
@@ -771,6 +953,19 @@
   </section>
 
   <!-- ==============================================
+       7.  YOGA & STRETCHING
+       ============================================== -->
+  <section id="yoga" class="screen">
+    <button class="back-btn" aria-label="Back to Hub">🏠</button>
+    <div class="mascot" id="yoga-mascot" aria-hidden="true">🦉</div>
+
+    <div class="yoga-stage" id="yoga-stage" aria-label="Tap when done">
+      <span class="yoga-emoji" id="yoga-emoji">🧘</span>
+      <span class="yoga-word" id="yoga-word"></span>
+    </div>
+  </section>
+
+  <!-- ==============================================
        JAVASCRIPT ENGINE
        ============================================== -->
   <script>
@@ -783,10 +978,21 @@
     var synth       = window.speechSynthesis;
     var bestVoice   = null;
 
-    /* Preferred voice names — checked in priority order */
+    /*
+     * Priority list — first match wins.
+     * Covers Chrome (Google), macOS (Samantha/Victoria),
+     * Windows (Zira), iOS (Karen), and generic "Natural"
+     * or "Premium" neural voices on modern browsers.
+     */
     var voicePrefs  = [
-      'google us english', 'samantha', 'victoria',
-      'natural', 'female', 'zira', 'karen', 'moira'
+      'google us english',
+      'samantha',
+      'natural',
+      'premium',
+      'victoria',
+      'zira',
+      'karen',
+      'moira'
     ];
 
     /**
@@ -823,18 +1029,48 @@
       synth.onvoiceschanged = pickVoice;
     }
 
+    /* -----------------------------------------------
+       Mascot registry — each game screen's 🦉 bubble
+       ----------------------------------------------- */
+    var mascots = {
+      flash  : document.getElementById('flash-mascot'),
+      memory : document.getElementById('memory-mascot'),
+      yoga   : document.getElementById('yoga-mascot')
+    };
+    var activeMascot = null;   /* tracks whichever is visible */
+
+    function setActiveMascot(id) {
+      activeMascot = mascots[id] || null;
+    }
+
+    /** Start the mascot pulse animation. */
+    function mascotStart() {
+      if (activeMascot) activeMascot.classList.add('speaking');
+    }
+
+    /** Stop the mascot pulse animation. */
+    function mascotStop() {
+      if (activeMascot) activeMascot.classList.remove('speaking');
+    }
+
     /**
-     * Speak a phrase. Always cancels first to prevent
-     * overlapping audio from rapid toddler taps.
+     * Speak a phrase.
+     * - Always cancels first (prevents overlap from rapid taps).
+     * - Pulses the active mascot while speaking.
+     * - Calls optional onEnd callback when finished.
      */
     function speak(text, onEnd) {
       synth.cancel();
-      var utter  = new SpeechSynthesisUtterance(text);
-      utter.lang = 'en-US';
-      utter.rate = 0.9;
-      utter.pitch = 1.2;
+      var utter   = new SpeechSynthesisUtterance(text);
+      utter.lang  = 'en-US';
+      utter.rate  = 0.75;   /* slow & clear for 3-5 year olds */
+      utter.pitch = 1.2;    /* warm, enthusiastic tone        */
       if (bestVoice) utter.voice = bestVoice;
-      if (onEnd) utter.onend = onEnd;
+      utter.onstart = mascotStart;
+      utter.onend   = function () {
+        mascotStop();
+        if (onEnd) onEnd();
+      };
       synth.speak(utter);
     }
 
@@ -849,6 +1085,9 @@
     }
 
     function goToHub() {
+      synth.cancel();
+      mascotStop();
+      activeMascot = null;
       showScreen('hub');
       speak('What would you like to play?');
     }
@@ -858,8 +1097,10 @@
       btn.addEventListener('click', function () {
         var game = btn.getAttribute('data-game');
         showScreen(game);
-        if (game === 'flash')  initFlashcards();
-        if (game === 'memory') speak("Let's find the pairs!");
+        setActiveMascot(game);
+        if (game === 'flash')  { initFlashcards(); return; }
+        if (game === 'memory') { initMemory();     return; }
+        if (game === 'yoga')   { initYoga();        return; }
         if (game === 'pony')   speak("Help pony get ready!");
         if (game === 'count')  speak("Let's count!");
         if (game === 'drums')  speak("Let's make music!");
@@ -870,6 +1111,7 @@
     document.querySelectorAll('.back-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         flashBusy = false;
+        yogaBusy  = false;
         goToHub();
       });
     });
@@ -1004,35 +1246,39 @@
        4.  GAME 1 — DAILY FLASHCARDS (Proactive)
        ================================================ */
     var ROUNDS_PER_SESSION = 5;
-    var flashDeck  = [];    // shuffled slice for this session
+    var flashDeck  = [];
     var flashIndex = 0;
     var flashBusy  = false;
-    var targetSide = '';    // 'left' or 'right'
+    var targetSide = '';
 
-    var leftBtn   = document.getElementById('flash-left');
-    var rightBtn  = document.getElementById('flash-right');
-    var leftEmoji  = leftBtn.querySelector('.flash-emoji');
-    var leftWord   = leftBtn.querySelector('.flash-word');
-    var rightEmoji = rightBtn.querySelector('.flash-emoji');
-    var rightWord  = rightBtn.querySelector('.flash-word');
+    var progressFill = document.getElementById('flash-progress');
+    var leftBtn      = document.getElementById('flash-left');
+    var rightBtn     = document.getElementById('flash-right');
+    var leftEmoji    = leftBtn.querySelector('.flash-emoji');
+    var leftWord     = leftBtn.querySelector('.flash-word');
+    var rightEmoji   = rightBtn.querySelector('.flash-emoji');
+    var rightWord    = rightBtn.querySelector('.flash-word');
+
+    /** Update the progress bar to reflect rounds completed. */
+    function setProgress(completed, total) {
+      var pct = Math.round((completed / total) * 100);
+      progressFill.style.width = pct + '%';
+      progressFill.parentElement.setAttribute('aria-valuenow', pct);
+    }
 
     /** Pick a pair: target + one distractor */
     function loadRound() {
       var target = flashDeck[flashIndex];
 
-      /* Pick a random distractor that isn't the target */
       var distractor;
       do {
         distractor = allWords[Math.floor(Math.random() * allWords.length)];
       } while (distractor.word === target.word);
 
-      /* Randomly place target on left or right */
       targetSide = Math.random() < 0.5 ? 'left' : 'right';
-
       var leftItem  = targetSide === 'left'  ? target : distractor;
       var rightItem = targetSide === 'right' ? target : distractor;
 
-      /* Populate cards — emoji only, word hidden */
       leftEmoji.textContent  = leftItem.emoji;
       leftWord.textContent   = leftItem.word;
       leftWord.classList.remove('visible');
@@ -1047,7 +1293,6 @@
       rightBtn.dataset.word      = rightItem.word;
       rightBtn.dataset.animation = rightItem.animation;
 
-      /* Clear any leftover animations */
       clearAnim(leftEmoji);
       clearAnim(rightEmoji);
     }
@@ -1058,50 +1303,43 @@
 
     function triggerAnim(el, name) {
       clearAnim(el);
-      /* Force reflow so re-adding the same class restarts the animation */
       void el.offsetWidth;
       el.classList.add('anim-' + name);
     }
 
-    /** Ask the question for the current round. */
     function askQuestion() {
-      var word = flashDeck[flashIndex].word;
-      speak('Where is the ' + word + '?');
+      speak('Where is the ' + flashDeck[flashIndex].word + '?');
     }
 
-    /** Initialise a new flashcard session. */
     function initFlashcards() {
       flashIndex = 0;
       flashBusy  = false;
+      setProgress(0, ROUNDS_PER_SESSION);
       shuffle(allWords);
       flashDeck = allWords.slice(0, ROUNDS_PER_SESSION);
       loadRound();
-      speak("Let's play! Can you find the right picture?", function () {
+      speak('Welcome! Let\'s play. Listen carefully and tap the right picture!', function () {
         askQuestion();
       });
     }
 
-    /** Handle a choice tap. */
     function handleChoice(side) {
       if (flashBusy) return;
       flashBusy = true;
 
-      var isCorrect = (side === targetSide);
-      var tappedBtn   = side === 'left' ? leftBtn   : rightBtn;
-      var tappedEmoji = side === 'left' ? leftEmoji : rightEmoji;
-      var tappedWord  = side === 'left' ? leftWord  : rightWord;
-      var correctBtn   = targetSide === 'left' ? leftBtn   : rightBtn;
-      var correctEmoji = targetSide === 'left' ? leftEmoji : rightEmoji;
-      var correctWord  = targetSide === 'left' ? leftWord  : rightWord;
+      var isCorrect    = (side === targetSide);
+      var tappedBtn    = side === 'left' ? leftBtn    : rightBtn;
+      var tappedEmoji  = side === 'left' ? leftEmoji  : rightEmoji;
+      var tappedWord   = side === 'left' ? leftWord   : rightWord;
 
       if (isCorrect) {
-        /* --- CORRECT --- */
         tappedBtn.classList.add('correct');
         triggerAnim(tappedEmoji, tappedBtn.dataset.animation);
         tappedWord.classList.add('visible');
 
+        setProgress(flashIndex + 1, ROUNDS_PER_SESSION);
+
         speak('Yes! ' + flashDeck[flashIndex].word + '!', function () {
-          /* Wait 2s then advance */
           setTimeout(function () {
             flashIndex++;
             if (flashIndex < flashDeck.length) {
@@ -1109,9 +1347,8 @@
               flashBusy = false;
               askQuestion();
             } else {
-              /* Session complete! */
               launchConfetti();
-              speak('Great job!', function () {
+              speak('Amazing! You found them all!', function () {
                 setTimeout(goToHub, 1500);
               });
             }
@@ -1119,17 +1356,116 @@
         });
 
       } else {
-        /* --- INCORRECT — gentle retry --- */
         triggerAnim(tappedEmoji, 'shake');
-        var word = flashDeck[flashIndex].word;
-        speak('Oops, try again! Where is the ' + word + '?', function () {
+        speak('Oops! Try again. Where is the ' + flashDeck[flashIndex].word + '?', function () {
           flashBusy = false;
         });
       }
     }
 
-    leftBtn.addEventListener('click', function ()  { handleChoice('left');  });
+    leftBtn.addEventListener('click',  function () { handleChoice('left');  });
     rightBtn.addEventListener('click', function () { handleChoice('right'); });
+
+    /* ================================================
+       5.  GAME 2 — MEMORY MATCH (Difficulty Selector)
+       ================================================ */
+    var memoryMenu = document.getElementById('memory-menu');
+    var memoryGrid = document.getElementById('memory-grid');
+
+    /**
+     * Called when a difficulty button is tapped.
+     * Hides the selector and reveals the card grid.
+     * Full matching logic will be added in a later step.
+     */
+    function startMemoryGame(cardCount) {
+      memoryMenu.classList.add('hidden');
+      memoryGrid.classList.remove('hidden');
+      speak("Let's find the pairs! Ready?");
+      /* TODO: build cardCount cards dynamically */
+    }
+
+    function initMemory() {
+      memoryMenu.classList.remove('hidden');
+      memoryGrid.classList.add('hidden');
+      speak('How many cards would you like?');
+    }
+
+    document.querySelectorAll('.memory-level-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var count = parseInt(btn.getAttribute('data-count'), 10);
+        startMemoryGame(count);
+      });
+    });
+
+    /* ================================================
+       6.  GAME — YOGA & STRETCHING
+       ================================================ */
+    var yogaPoses = [
+      { name: 'Downward Dog',  emoji: '🐶', animation: 'bounce' },
+      { name: 'Sun Pose',      emoji: '☀️', animation: 'pulse'  },
+      { name: 'Tree Pose',     emoji: '🌳', animation: 'rock'   },
+      { name: 'Cat Pose',      emoji: '🐱', animation: 'wiggle' },
+      { name: 'Frog Pose',     emoji: '🐸', animation: 'bounce' },
+      { name: 'Butterfly',     emoji: '🦋', animation: 'wiggle' },
+      { name: 'Star Pose',     emoji: '⭐', animation: 'spin'   },
+      { name: 'Bear Hug',      emoji: '🐻', animation: 'rock'   },
+      { name: 'Cobra Pose',    emoji: '🐍', animation: 'wiggle' },
+      { name: 'Happy Baby',    emoji: '👶', animation: 'rock'   },
+      { name: 'Eagle Pose',    emoji: '🦅', animation: 'spin'   },
+      { name: 'Flower Pose',   emoji: '🌸', animation: 'pulse'  }
+    ];
+
+    var yogaDeck  = [];
+    var yogaIndex = 0;
+    var yogaBusy  = false;
+
+    var yogaEmojiEl = document.getElementById('yoga-emoji');
+    var yogaWordEl  = document.getElementById('yoga-word');
+    var yogaStage   = document.getElementById('yoga-stage');
+
+    function loadYogaPose(index) {
+      var pose = yogaDeck[index];
+      yogaEmojiEl.textContent = pose.emoji;
+      yogaWordEl.textContent  = pose.name;
+      yogaWordEl.classList.remove('visible');
+      clearAnim(yogaEmojiEl);
+    }
+
+    function initYoga() {
+      yogaIndex = 0;
+      yogaBusy  = false;
+      shuffle(yogaPoses);
+      yogaDeck = yogaPoses.slice();
+      loadYogaPose(0);
+      speak("Let's stretch! Do the " + yogaDeck[0].name + '! Can you stretch?');
+    }
+
+    yogaStage.addEventListener('click', function () {
+      if (yogaBusy) return;
+      yogaBusy = true;
+
+      var pose = yogaDeck[yogaIndex];
+
+      /* Celebrate the current pose */
+      triggerAnim(yogaEmojiEl, pose.animation);
+      yogaWordEl.classList.add('visible');
+
+      speak('Great job! ' + pose.name + '!', function () {
+        setTimeout(function () {
+          yogaIndex++;
+          if (yogaIndex < yogaDeck.length) {
+            loadYogaPose(yogaIndex);
+            yogaBusy = false;
+            speak("Now do the " + yogaDeck[yogaIndex].name + '! Can you stretch?');
+          } else {
+            launchConfetti();
+            speak('Amazing stretching! You are a yoga star!', function () {
+              setTimeout(goToHub, 1500);
+            });
+          }
+        }, 3000);
+      });
+    });
 
     /* ================================================
        5.  LIGHTWEIGHT CONFETTI EFFECT
